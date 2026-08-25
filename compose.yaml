@@ -1,0 +1,91 @@
+x-jobflow-app: &jobflow-app
+  build:
+    context: .
+    args:
+      PIP_INDEX_URL: ${PIP_INDEX_URL:-https://pypi.tuna.tsinghua.edu.cn/simple}
+      PIP_DEFAULT_TIMEOUT: ${PIP_DEFAULT_TIMEOUT:-120}
+      HTTP_PROXY: ${JOBFLOW_BUILD_HTTP_PROXY:-}
+      HTTPS_PROXY: ${JOBFLOW_BUILD_HTTPS_PROXY:-}
+      NO_PROXY: ${JOBFLOW_BUILD_NO_PROXY:-localhost,127.0.0.1}
+  image: jobflow-app:local
+  env_file:
+    - .env
+  environment:
+    POSTGRES_HOST: postgres
+    POSTGRES_PORT: "5432"
+    HTTP_PROXY: ${JOBFLOW_HTTP_PROXY:-}
+    HTTPS_PROXY: ${JOBFLOW_HTTPS_PROXY:-}
+    NO_PROXY: ${JOBFLOW_NO_PROXY:-postgres,localhost,127.0.0.1}
+  depends_on:
+    postgres:
+      condition: service_healthy
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    env_file:
+      - .env
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT}:5432"
+    volumes:
+      - postgres_data_v1:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  migrate:
+    image: postgres:18-alpine
+    profiles: ["tools"]
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./migrations:/migrations:ro
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -eu
+        for migration in /migrations/*.sql; do
+          echo "Applying $${migration}"
+          PGPASSWORD="$${POSTGRES_PASSWORD}" psql \
+            -v ON_ERROR_STOP=1 \
+            -h "$${POSTGRES_HOST}" \
+            -p "$${POSTGRES_PORT}" \
+            -U "$${POSTGRES_USER}" \
+            -d "$${POSTGRES_DB}" \
+            -f "$${migration}"
+        done
+
+  etl:
+    <<: *jobflow-app
+    profiles: ["tools"]
+    volumes:
+      - ./data/raw:/data/raw:ro
+    entrypoint: ["python", "-m", "jobflow.cli"]
+
+  api:
+    <<: *jobflow-app
+    ports:
+      - "${API_BIND_HOST:-127.0.0.1}:${API_PORT:-8000}:8000"
+    command: ["uvicorn", "jobflow.api.app:app", "--host", "0.0.0.0", "--port", "8000"]
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  postgres_data_v1:

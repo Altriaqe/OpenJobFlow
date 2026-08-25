@@ -1,0 +1,26 @@
+services:
+  mihomo:
+    image: metacubex/mihomo:v1.19.30
+    restart: unless-stopped
+    volumes:
+      - "${MIHOMO_CONFIG_DIR:-./runtime/mihomo}:/root/.config/mihomo"
+    command: ["-d", "/root/.config/mihomo"]
+    expose:
+      - "7890"
+    ports:
+      - "127.0.0.1:${MIHOMO_HOST_PORT:-7890}:7890"
+
+  api:
+    build:
+      network: host
+    environment:
+      HTTP_PROXY: http://mihomo:7890
+      HTTPS_PROXY: http://mihomo:7890
+      NO_PROXY: postgres,mihomo,localhost,127.0.0.1
+    depends_on:
+      mihomo:
+        condition: service_started
+
+  etl:
+    build:
+      network: host

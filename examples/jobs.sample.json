@@ -1,0 +1,112 @@
+{
+  "jobs": [
+    {
+      "job_id": "demo-001",
+      "title": "AI Agent 工程师",
+      "boss_name": "星河示例科技",
+      "location": "上海·浦东新区",
+      "job_link": "https://example.com/jobs/demo-001",
+      "salary": "20-30K·14薪",
+      "skills": "Python | LLM | FastAPI"
+    },
+    {
+      "job_id": "demo-002",
+      "title": "Python 数据开发工程师",
+      "boss_name": "云帆示例数据",
+      "location": "上海·徐汇区",
+      "job_link": "https://example.com/jobs/demo-002",
+      "salary": "15-25K",
+      "skills": "Python | SQL | PostgreSQL"
+    },
+    {
+      "job_id": "demo-003",
+      "title": "Java 后端开发工程师",
+      "boss_name": "远航示例软件",
+      "location": "上海·杨浦区",
+      "job_link": "https://example.com/jobs/demo-003",
+      "salary": "18-28K",
+      "skills": "Java | Spring | PostgreSQL"
+    },
+    {
+      "job_id": "demo-004",
+      "title": "数据分析师",
+      "boss_name": "经纬示例咨询",
+      "location": "上海·静安区",
+      "job_link": "https://example.com/jobs/demo-004",
+      "salary": "面议",
+      "skills": "SQL | Python | Tableau"
+    },
+    {
+      "job_id": "demo-005",
+      "title": "AI 应用开发工程师",
+      "boss_name": "北辰示例智能",
+      "location": "北京·海淀区",
+      "job_link": "https://example.com/jobs/demo-005",
+      "salary": "22-32K",
+      "skills": "Python | LLM | RAG"
+    },
+    {
+      "job_id": "demo-006",
+      "title": "Java 平台工程师",
+      "boss_name": "青云示例系统",
+      "location": "北京·朝阳区",
+      "job_link": "https://example.com/jobs/demo-006",
+      "salary": "20-30K",
+      "skills": "Java | Docker | Linux"
+    },
+    {
+      "job_id": "demo-007",
+      "title": "数据分析实习生",
+      "boss_name": "启明示例研究",
+      "location": "北京·西城区",
+      "job_link": "https://example.com/jobs/demo-007",
+      "salary": "200-300元/天",
+      "skills": "Excel | SQL | Python"
+    },
+    {
+      "job_id": "demo-008",
+      "title": "Python 后端工程师",
+      "boss_name": "西湖示例网络",
+      "location": "杭州·余杭区",
+      "job_link": "https://example.com/jobs/demo-008",
+      "salary": "5000-7000元/月",
+      "skills": "Python | FastAPI | Redis"
+    },
+    {
+      "job_id": "demo-009",
+      "title": "数据开发助理",
+      "boss_name": "钱塘示例服务",
+      "location": "杭州·滨江区",
+      "job_link": "https://example.com/jobs/demo-009",
+      "salary": "3500-5500元/月",
+      "skills": "SQL | ETL | PostgreSQL"
+    },
+    {
+      "job_id": "demo-010",
+      "title": "AI 数据标注顾问",
+      "boss_name": "灵隐示例实验室",
+      "location": "杭州·西湖区",
+      "job_link": "https://example.com/jobs/demo-010",
+      "salary": "50-60元/时",
+      "skills": "Data Quality | LLM | Python"
+    },
+    {
+      "job_id": "demo-011",
+      "title": "Java 云原生工程师",
+      "boss_name": "鹏城示例云",
+      "location": "深圳·南山区",
+      "job_link": "https://example.com/jobs/demo-011",
+      "salary": "25-35K·13薪",
+      "skills": "Java | Kubernetes | Docker"
+    },
+    {
+      "job_id": "demo-012",
+      "title": "数据产品分析师",
+      "boss_name": "前海示例产品",
+      "location": "深圳·福田区",
+      "job_link": "https://example.com/jobs/demo-012",
+      "salary": "16-24K",
+      "skills": "SQL | Python | Product Analytics"
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+CREATE SCHEMA IF NOT EXISTS core;
+
+CREATE TABLE IF NOT EXISTS core.jobs (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY
+);
+
+ALTER TABLE core.jobs
+ADD COLUMN IF NOT EXISTS source TEXT,
+ADD COLUMN IF NOT EXISTS external_id TEXT,
+ADD COLUMN IF NOT EXISTS title TEXT,
+ADD COLUMN IF NOT EXISTS company TEXT,
+ADD COLUMN IF NOT EXISTS city TEXT,
+ADD COLUMN IF NOT EXISTS detail_url TEXT,
+ADD COLUMN IF NOT EXISTS first_seen_at TIMESTAMPTZ,
+ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMPTZ,
+ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ;
+
+ALTER TABLE core.jobs
+ALTER COLUMN source
+SET
+    NOT NULL,
+ALTER COLUMN external_id
+SET
+    NOT NULL,
+ALTER COLUMN title
+SET
+    NOT NULL,
+ALTER COLUMN company
+SET
+    NOT NULL,
+ALTER COLUMN city
+SET
+    NOT NULL,
+ALTER COLUMN detail_url
+SET
+    NOT NULL,
+ALTER COLUMN first_seen_at
+SET DEFAULT CURRENT_TIMESTAMP,
+ALTER COLUMN first_seen_at
+SET
+    NOT NULL,
+ALTER COLUMN last_seen_at
+SET DEFAULT CURRENT_TIMESTAMP,
+ALTER COLUMN last_seen_at
+SET
+    NOT NULL,
+ALTER COLUMN updated_at
+SET DEFAULT CURRENT_TIMESTAMP,
+ALTER COLUMN updated_at
+SET
+    NOT NULL;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'jobs_source_external_id_key'
+          AND conrelid = 'core.jobs'::regclass
+    ) THEN
+        ALTER TABLE core.jobs
+            ADD CONSTRAINT jobs_source_external_id_key
+            UNIQUE (source, external_id);
+    END IF;
+END $$;
