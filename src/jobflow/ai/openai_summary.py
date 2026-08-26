@@ -1,3 +1,5 @@
+"""OpenAI 摘要边界：只接收聚合指标，避免模型接触原始岗位数据。"""
+
 import json
 import os
 
@@ -25,6 +27,7 @@ def generate_city_report(
     client=None,
     model: str | None = None,
 ) -> str:
+    """根据聚合城市指标生成摘要；模型层不读取原始岗位明细。"""
     selected_model = model or os.getenv("OPENAI_MODEL")
     if not selected_model:
         raise OpenAIConfigurationError("missing OPENAI_MODEL")

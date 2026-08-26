@@ -1,3 +1,5 @@
+"""图表渲染层：把日报聚合指标绘制为可发送的 PNG，不读取原始岗位。"""
+
 from collections.abc import Sequence
 from io import BytesIO
 

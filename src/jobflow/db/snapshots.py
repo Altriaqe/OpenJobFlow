@@ -1,4 +1,6 @@
 from jobflow.models.job import JobRecord
+"""每日快照与 Telegram 投递状态持久化，负责幂等认领和结果记录。"""
+
 from datetime import date
 
 from jobflow.models.snapshot import (
@@ -17,6 +19,7 @@ def insert_snapshot(
     metadata: SnapshotMetadata,
     jobs: list[JobRecord],
 ) -> int:
+    """写入一份带采集口径的不可变快照及其岗位观察值。"""
     """写入一份不可变的每日岗位快照，并创建待发送状态。"""
 
     if not jobs:
@@ -98,6 +101,7 @@ def get_snapshot(
     snapshot_date: date,
     search_keyword: str,
 ) -> SnapshotHeader | None:
+    """按日期、关键词和采集范围读取快照头，供日报比较使用。"""
     cursor = connection.cursor()
     cursor.execute(
         """
@@ -141,6 +145,7 @@ def _snapshot_item_from_row(row: tuple[object, ...], offset: int = 0) -> Snapsho
 
 
 def list_snapshot_items(connection, snapshot_id: int) -> tuple[SnapshotItem, ...]:
+    """读取快照岗位观察值；结果按稳定身份排序以保证报告确定性。"""
     cursor = connection.cursor()
     cursor.execute(
         """
@@ -163,6 +168,7 @@ def list_dated_snapshots(
     end_date: date,
     search_keyword: str,
 ) -> tuple[DatedSnapshot, ...]:
+    """读取日期范围内快照，为日环比和周环比提供输入。"""
     cursor = connection.cursor()
     cursor.execute(
         """
@@ -189,6 +195,7 @@ def list_dated_snapshots(
 
 
 def get_delivery(connection, snapshot_id: int) -> ReportDelivery | None:
+    """读取单份快照的文字/图片投递状态。"""
     cursor = connection.cursor()
     cursor.execute(
         """

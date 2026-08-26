@@ -1,3 +1,5 @@
+"""岗位批次事务编排：统一提交成功结果，失败时回滚并记录批次错误。"""
+
 from jobflow.db.batches import fail_batch, finish_batch, start_batch
 from jobflow.db.connection import connect_postgres
 from jobflow.db.jobs import insert_jobs
@@ -12,11 +14,12 @@ def run_job_batch(
     jobs: list[JobRecord],
     snapshot_metadata: SnapshotMetadata | None = None,
 ) -> int | None:
-    """批量插入岗位数据insert_jobs()函数的事务处理封装，作为run_job_batch()函数的核心逻辑"""
+    """在一个数据库连接中完成 raw/core/snapshot 写入并管理批次事务。"""
     connection = connect_postgres()
     batch_id = None
 
     try:
+        # 先建立批次，再写 raw/core/snapshot；所有成功写入最终由一次 commit 固化。
         if jobs:
             batch_id = start_batch(connection, jobs[0].source)
             connection.commit()  # 提交事务

@@ -1,3 +1,5 @@
+"""固定规则简报渲染器：不调用模型，只使用数据库聚合结果。"""
+
 from __future__ import annotations
 
 from datetime import datetime

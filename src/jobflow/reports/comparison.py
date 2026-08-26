@@ -1,3 +1,5 @@
+"""日环比和周环比计算层：只比较采集口径一致的快照。"""
+
 from collections import Counter
 from collections.abc import Sequence
 from datetime import date, timedelta

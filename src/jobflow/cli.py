@@ -1,3 +1,5 @@
+"""命令行入口：读取一个快照文件并交给 ETL Worker 处理。"""
+
 import argparse
 from datetime import date
 from pathlib import Path
@@ -16,6 +18,7 @@ def parse_cities(value: str) -> tuple[str, ...]:
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """定义快照路径和可选的每日快照元数据参数。"""
     parser = argparse.ArgumentParser(description="Process one JobFlow BOSS snapshot")
     parser.add_argument("snapshot", type=Path, help="path to the BOSS snapshot JSON file")
     parser.add_argument("--snapshot-date", type=date.fromisoformat)
@@ -48,6 +51,7 @@ def build_snapshot_metadata(args: argparse.Namespace) -> SnapshotMetadata | None
 
 
 def main(argv: list[str] | None = None) -> int:
+    """解析参数、执行 ETL，并把用户可读错误转换为非零退出码。"""
     args = build_parser().parse_args(argv)
     try:
         metadata = build_snapshot_metadata(args)

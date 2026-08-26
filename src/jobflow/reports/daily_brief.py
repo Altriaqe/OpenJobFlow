@@ -1,3 +1,5 @@
+"""日报文字渲染层：把聚合指标格式化为受长度约束的中文简报。"""
+
 from datetime import date
 from decimal import Decimal
 

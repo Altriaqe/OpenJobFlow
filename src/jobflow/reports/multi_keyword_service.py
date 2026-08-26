@@ -1,3 +1,5 @@
+"""多关键词日报服务：汇总趋势并管理 Telegram 图文投递幂等状态。"""
+
 from collections.abc import Callable, Sequence
 from datetime import date, timedelta
 
@@ -185,6 +187,7 @@ def get_multi_keyword_report_status(
     snapshot_date: date,
     keywords: Sequence[str] = DAILY_KEYWORDS,
 ) -> dict[str, object]:
+    """汇总各关键词快照和 Telegram 文字/图片状态，供 API 查询。"""
     normalized = _validated_keywords(keywords)
     headers, missing = _load_headers(
         connection,
@@ -283,6 +286,7 @@ def _lock_deliveries(connection, snapshot_ids: list[int]) -> tuple[ReportDeliver
 
 
 def _claim_text(connection, snapshot_ids: list[int]) -> None:
+    """在事务内认领文字发送，避免同一天同渠道重复发送。"""
     deliveries = _lock_deliveries(connection, snapshot_ids)
     try:
         phase, _text_message_id, _photo_message_id = _delivery_phase(deliveries)
@@ -298,6 +302,7 @@ def _claim_text(connection, snapshot_ids: list[int]) -> None:
 
 
 def _claim_photo(connection, snapshot_ids: list[int]) -> int:
+    """在文字成功后认领图片发送，返回需要发送的快照数量。"""
     deliveries = _lock_deliveries(connection, snapshot_ids)
     try:
         phase, text_message_id, _photo_message_id = _delivery_phase(deliveries)
@@ -349,6 +354,7 @@ def send_multi_keyword_report(
     text_sender: Callable[[str], TelegramReceipt] | None = None,
     photo_sender: Callable[[bytes], TelegramReceipt] | None = None,
 ) -> dict[str, object]:
+    """构建多关键词日报并完成 Telegram 图文发送，状态写入与发送解耦。"""
     """生成并分阶段发送一份可安全重入的多关键词图文简报。"""
 
     normalized = _validated_keywords(keywords)
@@ -485,6 +491,7 @@ def recover_multi_keyword_report_photo(
     keywords: Sequence[str] = DAILY_KEYWORDS,
     photo_sender: Callable[[bytes], TelegramReceipt] | None = None,
 ) -> dict[str, object]:
+    """仅在显式确认文字未收到时补发图片，避免不确定结果造成重复消息。"""
     """用户确认文字可见后，只恢复多关键词日报的图片阶段。"""
 
     if not confirm_text_visible:

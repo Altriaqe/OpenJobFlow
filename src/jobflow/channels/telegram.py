@@ -1,3 +1,5 @@
+"""Telegram 发送适配器：统一文字、图片、重试和不确定结果语义。"""
+
 import os
 import time
 from dataclasses import dataclass
@@ -42,6 +44,7 @@ def send_telegram_text(
     sleep=time.sleep,
     max_attempts: int = 3,
 ) -> TelegramReceipt:
+    """发送文字消息；在请求前校验凭据和 Telegram 长度限制。"""
     selected_token = bot_token or os.getenv("TELEGRAM_BOT_TOKEN")
     selected_chat_id = chat_id or os.getenv("TELEGRAM_CHAT_ID")
 
@@ -74,6 +77,7 @@ def send_telegram_photo(
     sleep=time.sleep,
     max_attempts: int = 3,
 ) -> TelegramReceipt:
+    """发送 PNG 图片；不确定回执交由上层恢复流程处理。"""
     selected_token = bot_token or os.getenv("TELEGRAM_BOT_TOKEN")
     selected_chat_id = chat_id or os.getenv("TELEGRAM_CHAT_ID")
     if not selected_token:
@@ -104,6 +108,7 @@ def _request_telegram(
     max_attempts: int,
     sleep: Callable[[int], object],
 ) -> TelegramReceipt:
+    """执行有限重试，并区分明确拒绝与可能已送达的不确定结果。"""
     if max_attempts <= 0:
         raise ValueError("max_attempts must be positive")
 

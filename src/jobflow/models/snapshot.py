@@ -1,3 +1,5 @@
+"""每日快照、指标变化和报告输入的数据契约。"""
+
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
@@ -14,6 +16,7 @@ class SnapshotMetadata:
     details_included: bool
 
     def __post_init__(self) -> None:
+        """规范化关键词与城市，并在比较前拒绝无效采集口径。"""
         keyword = self.search_keyword.strip()
         cities = tuple(city.strip() for city in self.cities)
 
@@ -31,6 +34,7 @@ class SnapshotMetadata:
 
     @property
     def city_count(self) -> int:
+        """返回本次快照覆盖的城市数量。"""
         return len(self.cities)
 
     @property
@@ -61,6 +65,7 @@ class SnapshotItem:
 
     @property
     def identity(self) -> tuple[str, str]:
+        """返回源系统与外部 ID 组成的稳定岗位身份。"""
         return self.source, self.external_id
 
 
@@ -86,6 +91,7 @@ class NamedCount:
     count: int
 
     def __post_init__(self) -> None:
+        """规范化指标名称并拒绝负数计数。"""
         name = self.name.strip()
         if not name:
             raise ValueError("name must not be empty")
@@ -149,6 +155,7 @@ class SnapshotHeader:
 
     @property
     def scope_key(self) -> tuple[str, tuple[str, ...], int, bool]:
+        """返回快照头用于比较的稳定采集口径。"""
         return (
             self.search_keyword,
             tuple(sorted(self.cities)),

@@ -1,8 +1,10 @@
+"""core 层岗位写入：按 source/external_id 幂等 Upsert。"""
+
 from jobflow.models.job import JobRecord
 
 
 def insert_job(connection, job: JobRecord) -> None:
-    """将岗位数据插入数据库，如果已存在则更新"""
+    """插入或更新一条岗位；只有字段变化时才刷新 ``updated_at``。"""
     cursor = connection.cursor()
     sql = """
         INSERT INTO core.jobs (
@@ -66,6 +68,6 @@ def insert_job(connection, job: JobRecord) -> None:
 
 
 def insert_jobs(connection, jobs: list[JobRecord]) -> None:
-    """批量插入岗位数据，如果已存在则更新"""
+    """在调用方事务中逐条执行岗位幂等 Upsert。"""
     for job in jobs:
         insert_job(connection, job)

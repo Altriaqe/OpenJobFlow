@@ -1,3 +1,5 @@
+"""历史快照基线回填入口：只处理经过审核、口径明确的批次。"""
+
 import argparse
 from dataclasses import dataclass
 from datetime import date
@@ -35,6 +37,7 @@ def _parse_cities(value: str) -> tuple[str, ...]:
 
 
 def audit_batches(connection, *, start_date: date, end_date: date) -> tuple[tuple[object, ...], ...]:
+    """列出日期范围内可供人工核验的批次，不自动修改数据。"""
     """只读列出可能用于人工核验的历史批次，不读取完整岗位内容。"""
 
     cursor = connection.cursor()
@@ -92,6 +95,7 @@ def _load_batch_candidate(connection, batch_id: int) -> BatchCandidate | None:
 
 
 def backfill_verified_batch(connection, request: VerifiedBackfillRequest) -> int:
+    """将已确认批次写入快照表，保持原批次和采集口径不变。"""
     """将人工确认口径的一个成功批次回填为快照；本函数不会发送消息。"""
 
     metadata = SnapshotMetadata(
@@ -143,6 +147,7 @@ def backfill_verified_batch(connection, request: VerifiedBackfillRequest) -> int
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """构造审计和回填命令行参数。"""
     parser = argparse.ArgumentParser(description="Audit and explicitly backfill JobFlow snapshots")
     commands = parser.add_subparsers(dest="command", required=True)
 
@@ -170,6 +175,7 @@ def _print_audit(rows: tuple[tuple[object, ...], ...]) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """执行审计或人工确认后的回填，并返回 CLI 退出码。"""
     args = build_parser().parse_args(argv)
     if args.command == "backfill" and not args.confirm_scope:
         print("backfill requires --confirm-scope after manual verification", file=sys.stderr)

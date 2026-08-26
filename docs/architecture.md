@@ -1,6 +1,6 @@
 # 架构与实现状态
 
-更新日期：2026-08-17
+更新日期：2026-08-26
 
 JobFlow 的主线是招聘数据 ETL 与只读分析。数据源、写入、查询、AI 总结和消息发送分别放在独立边界中，避免某一层的变化扩散到整个系统。
 
@@ -34,8 +34,22 @@ Ubuntu Chrome CDP / 本地快照 / 后续合规动态数据源
         Query Report / Optional AI Summary Service
                              │
                              ▼
-                    Telegram Bot 私聊
+             报告与图表聚合层
+                    │
+          ┌─────────┴─────────┐
+          ▼                   ▼
+   Telegram Bot 私聊      微信测试号模板
+   文字 + PNG             聚合摘要
+                              │
+                              ▼
+                   公众号文章排版包
+                 Markdown / HTML / PNG
+                              │
+                              ▼
+                   正式订阅号人工发布
 ```
+
+每日 Shell 在 ETL 和文章包生成完成后并行触发 Telegram、微信两个渠道。渠道状态独立记录：同一渠道同一天只能成功认领一次，某个渠道失败不会阻止另一个渠道尝试。
 
 网络受限的部署环境可以通过 `JOBFLOW_HTTP_PROXY`、`JOBFLOW_HTTPS_PROXY` 和 `JOBFLOW_NO_PROXY` 为应用容器提供外联代理。代理客户端、节点和订阅属于部署环境，不属于 JobFlow 业务架构，也不进入公开仓库。
 
@@ -60,7 +74,7 @@ Ubuntu Chrome CDP / 本地快照 / 后续合规动态数据源
 | `core` | `jobs` | 保存标准化、幂等去重后的岗位 |
 | `mart` | 3 个 View | 提供城市岗位、城市月薪和技能聚合 |
 
-5 个 migration 位于 `migrations/001` 至 `005`。mart 使用普通 PostgreSQL View，core 数据变化后查询结果自动更新，不需要 refresh。
+当前 migration 位于 `migrations/001` 至 `009`，其中 `009` 预留微信公众号等新增渠道的独立投递状态表。mart 使用普通 PostgreSQL View，core 数据变化后查询结果自动更新，不需要 refresh。
 
 ### FastAPI
 
@@ -79,7 +93,7 @@ POST /reports/cities/send
 
 ### AI Summary Service 与 Telegram
 
-`src/jobflow/reports/` 支持 `query` 与 `ai` 两种报告模式。`query` 使用数据库指标和固定规则生成中文查询简报；`ai` 才调用 `src/jobflow/ai/` 的 OpenAI-compatible Responses API。`src/jobflow/channels/` 通过 Telegram Bot API 发送文本；企业微信适配器保留但未启用。
+`src/jobflow/reports/` 支持 `query` 与 `ai` 两种报告模式。`query` 使用数据库指标和固定规则生成中文查询简报；`ai` 才调用 `src/jobflow/ai/` 的 OpenAI-compatible Responses API。`src/jobflow/channels/` 通过 Telegram Bot API 发送文本和 PNG；企业微信适配器保留但未启用；微信公众号适配器只发送测试号模板摘要。渠道层不读取数据库、不生成报告，异常由上层状态机分类。
 
 `POST /reports/cities/send` 使用 Bearer Token 保护。它查询最多 100 个城市，空数据时跳过发送；OpenAI 模型或 Telegram 失败时返回通用 `502/503`，不向客户端暴露秘密和内部异常。
 

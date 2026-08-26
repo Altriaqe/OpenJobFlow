@@ -1,3 +1,5 @@
+"""ops 批次状态写入：记录 ETL 运行生命周期和错误。"""
+
 def start_batch(connection, source: str) -> int:
     """在数据库中插入一个新的运行中的批次，并返回其 ID"""
     cursor = connection.cursor()

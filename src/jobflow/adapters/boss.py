@@ -1,3 +1,5 @@
+"""BOSS 快照适配层：校验原始 JSON，并转换为统一岗位模型。"""
+
 import json
 import re
 from dataclasses import dataclass
@@ -109,6 +111,7 @@ def _validate_salary_values(
     maximum: int,
     months: int | None,
 ) -> None:
+    """校验薪资上下限和月数，阻止不可能的数值进入分析层。"""
     if minimum <= 0 or maximum < minimum or (months is not None and months <= 0):
         raise SnapshotError(f"薪资数值不合法: {source_text}")
 

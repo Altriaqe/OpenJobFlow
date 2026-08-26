@@ -1,9 +1,11 @@
+"""跨数据源统一的岗位记录模型。"""
+
 from dataclasses import dataclass, field
 
 
 @dataclass
 class JobRecord:
-    """岗位记录数据模型"""
+    """岗位标准化后的核心字段，供 ETL、数据库和报告层共同消费。"""
 
     source: str
     external_id: str

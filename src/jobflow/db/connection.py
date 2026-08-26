@@ -1,3 +1,5 @@
+"""PostgreSQL 连接入口：只从环境变量读取配置，不负责业务事务。"""
+
 import os
 
 import psycopg
@@ -9,6 +11,7 @@ class DatabaseConfigError(Exception):
 
 
 def connect_postgres():
+    """校验连接配置并创建连接；事务提交或回滚由调用方负责。"""
     password = os.getenv("POSTGRES_PASSWORD")
     host = os.getenv("POSTGRES_HOST")
     port = os.getenv("POSTGRES_PORT")

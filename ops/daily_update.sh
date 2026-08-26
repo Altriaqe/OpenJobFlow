@@ -2,6 +2,9 @@
 
 set -Eeuo pipefail
 
+# 每日入口只负责顺序编排：抓取、ETL、生成日报，再并行触发各消息渠道。
+# 业务统计和投递幂等由 API/数据库负责，避免 Shell 复制业务规则。
+
 # 同一时间只允许一个每日更新任务运行。
 LOCK_FILE="/tmp/jobflow-daily-update.lock"
 exec 9>"$LOCK_FILE"

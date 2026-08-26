@@ -1,3 +1,5 @@
+"""报告发送编排层：连接分析查询、文字生成和 Telegram 渠道。"""
+
 from jobflow.ai.openai_summary import generate_city_report
 from jobflow.channels.telegram import send_telegram_text
 from jobflow.db.analytics import list_city_job_counts

@@ -1,3 +1,5 @@
+"""企业微信机器人适配器，保留为可选渠道。"""
+
 import os
 
 import requests

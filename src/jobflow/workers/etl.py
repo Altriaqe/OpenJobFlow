@@ -1,3 +1,5 @@
+"""ETL 工作入口：读取适配后的岗位并交给事务批处理。"""
+
 from pathlib import Path
 
 from jobflow.adapters.boss import load_boss_jobs, map_boss_jobs
@@ -9,7 +11,7 @@ def run_boss_snapshot(
     path: Path,
     metadata: SnapshotMetadata | None = None,
 ) -> int | None:
-    """运行 Boss 直聘岗位快照 ETL 流程"""
+    """执行读取、标准化和入库；空快照直接返回，不创建空批次。"""
     raw_jobs = load_boss_jobs(path)
     jobs = map_boss_jobs(raw_jobs)
     if not jobs:

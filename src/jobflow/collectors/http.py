@@ -1,3 +1,5 @@
+"""通用 HTTP 采集边界，将 requests 异常转换为项目异常。"""
+
 import requests
 
 
@@ -6,7 +8,7 @@ class FetchError(Exception):
 
 
 def fetch_json(url: str) -> dict[str, object]:
-    """实现从给定的 URL 获取 JSON 数据的函数。"""
+    """从 URL 获取 JSON；网络、HTTP 和解析错误统一转换为 ``FetchError``。"""
 
     try:
         response = requests.get(url, timeout=10)

@@ -1,3 +1,5 @@
+"""单关键词日报服务：协调快照读取、比较、文字生成和 Telegram 投递。"""
+
 from collections.abc import Callable
 from datetime import date, timedelta
 
