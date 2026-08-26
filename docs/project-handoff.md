@@ -1,8 +1,52 @@
 # JobFlow 项目当前状态与开发交接
 
-更新日期：2026-08-17
+更新日期：2026-08-26
 
 这份文档是上下文压缩、新对话、换电脑或暂停开发后的第一入口。继续开发前先读取本文件，再用代码、测试、Git 和服务器实际输出确认可能变化的状态。
+
+## 0. 2026-08-26 当前停点
+
+公开仓库已经使用单一清洁提交发布，当前本机开发入口为：
+
+```text
+仓库：Altriaqe/OpenJobFlow
+本机目录：<LOCAL_JOBFLOW_DIR>
+公开发布基线 origin/main：554965b 开源V1.3.1
+Ubuntu 项目目录：<JOBFLOW_DIR>
+Ubuntu main / origin/main：554965b 开源V1.3.1
+```
+
+Ubuntu 已验证 `/health=ok`、`/ready=ready`、API/PostgreSQL healthy、Mihomo running、`jobflow-daily-update.timer=active`。真实 `.env` 和个人 Mihomo 配置只保存在服务器，不进入公开 Git。
+
+当前下一项功能是微信公众号每日推送。需求和架构已经完成讨论，正式 PRD 为：
+
+```text
+docs/superpowers/specs/2026-08-26-wechat-official-daily-delivery-design.md
+```
+
+已经确认：
+
+- 个人主体，先用微信公众平台测试号验证；
+- 测试号自动发送聚合摘要；
+- 自动生成完整公众号文章排版包；
+- 正式个人订阅号首版人工确认发布；
+- Telegram 保留，与微信独立发送；
+- 只公开聚合指标和趋势图；
+- 结果不确定时禁止自动重发；
+- 真实 appsecret、openid 和模板 ID 不写入 Git。
+
+测试号账号准备已经完成到：接收微信已关注测试号，`JobFlow日报` 测试模板已创建。下一步不是直接写代码，而是先根据 PRD 编写实施计划。当前本机精确提交和是否领先远端必须以 `git status`、`git log` 为准。
+
+新对话恢复提示词：
+
+```text
+继续 OpenJobFlow 微信公众号每日推送功能。
+项目路径：<LOCAL_JOBFLOW_DIR>
+请先阅读 docs/superpowers/specs/2026-08-26-wechat-official-daily-delivery-design.md
+和 docs/project-handoff.md，然后检查 git status --short --branch 与 git log -5 --oneline。
+不要重新讨论已确认需求，也不要直接写代码；先根据 PRD 编写实施计划。
+真实 appsecret、openid 和模板 ID 不得写入 Git。
+```
 
 ## 1. 项目目标
 
