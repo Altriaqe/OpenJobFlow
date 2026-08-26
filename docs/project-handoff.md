@@ -18,10 +18,11 @@ Ubuntu main / origin/main：554965b 开源V1.3.1
 
 Ubuntu 已验证 `/health=ok`、`/ready=ready`、API/PostgreSQL healthy、Mihomo running、`jobflow-daily-update.timer=active`。真实 `.env` 和个人 Mihomo 配置只保存在服务器，不进入公开 Git。
 
-当前下一项功能是微信公众号每日推送。需求和架构已经完成讨论，正式 PRD 为：
+当前正在开发 V1.3.2 微信公众号每日推送。需求和架构已经完成讨论，正式 PRD 和实施计划为：
 
 ```text
 docs/superpowers/specs/2026-08-26-wechat-official-daily-delivery-design.md
+docs/superpowers/plans/2026-08-26-wechat-official-daily-delivery.md
 ```
 
 已经确认：
@@ -34,6 +35,9 @@ docs/superpowers/specs/2026-08-26-wechat-official-daily-delivery-design.md
 - 只公开聚合指标和趋势图；
 - 结果不确定时禁止自动重发；
 - 真实 appsecret、openid 和模板 ID 不写入 Git。
+- V1.3.2 本机实现已覆盖：微信渠道适配器、模板字段、公众号文章包、Migration 009、独立状态机、FastAPI 发送/状态/补发接口，以及 Telegram/微信并行 Shell 编排。
+- 本机非 PostgreSQL 回归 305 passed；Ruff、Compose 解析、Shell 语法和公开凭据扫描通过。真实 PostgreSQL Migration、测试号手机送达和 systemd 定时任务仍待 Ubuntu 验收。
+- V1.3.2 推送策略：本机验证通过后形成服务器候选提交，维护者从 Ubuntu 拉取并完成私有配置与真实联调；只有真实验收通过后才把状态写成正式完成。
 
 测试号账号准备已经完成到：接收微信已关注测试号，`JobFlow日报` 测试模板已创建。下一步不是直接写代码，而是先根据 PRD 编写实施计划。当前本机精确提交和是否领先远端必须以 `git status`、`git log` 为准。
 
@@ -139,7 +143,7 @@ src/jobflow/
 ├─ api/         FastAPI 健康、分析和报告路由
 ├─ ai/          OpenAI 报告生成
 ├─ reports/     查询、总结、发送的业务编排
-└─ channels/    Telegram 发送适配器（企业微信适配器保留但未启用）
+└─ channels/    Telegram、企业微信和微信公众号发送适配器
 
 migrations/     001 到 005 的 PostgreSQL migration
 tests/          单元测试与真实 PostgreSQL 集成测试

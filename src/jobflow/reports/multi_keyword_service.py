@@ -33,6 +33,7 @@ from jobflow.reports.charts import (
 from jobflow.reports.comparison import compare_daily, count_new_jobs_by_city
 from jobflow.reports.daily_brief import build_multi_keyword_brief
 from jobflow.reports.daily_service import load_weekly_comparison_if_sunday
+from jobflow.reports.wechat_article import WechatArticleData, build_article_data
 
 DAILY_KEYWORDS = ("AI Agent", "Python开发", "Java开发", "数据分析")
 
@@ -346,6 +347,35 @@ def _build_report_parts(
     return text, image
 
 
+def build_multi_keyword_wechat_parts(
+    connection,
+    *,
+    snapshot_date: date,
+    keywords: Sequence[str] = DAILY_KEYWORDS,
+) -> tuple[WechatArticleData, bytes]:
+    """复用 Telegram 的多关键词趋势口径，生成微信文章数据和同一张趋势图。"""
+    normalized = _validated_keywords(keywords)
+    headers, missing = _load_headers(
+        connection, snapshot_date=snapshot_date, keywords=normalized
+    )
+    if missing:
+        raise MultiKeywordSnapshotMissing(missing)
+    _validate_shared_scope(headers)
+    trends = _build_trends(connection, snapshot_date=snapshot_date, headers=headers)
+    image = (
+        build_keyword_city_heatmap_png(trends, cities=headers[0].cities)
+        if all(trend.new_by_city is not None for trend in trends)
+        else build_baseline_pending_png()
+    )
+    article_data = build_article_data(
+        report_date=snapshot_date,
+        trends=trends,
+        city_count=headers[0].city_count,
+        pages_per_city=headers[0].pages_per_city,
+    )
+    return article_data, image
+
+
 def send_multi_keyword_report(
     connection,
     *,
@@ -355,7 +385,6 @@ def send_multi_keyword_report(
     photo_sender: Callable[[bytes], TelegramReceipt] | None = None,
 ) -> dict[str, object]:
     """构建多关键词日报并完成 Telegram 图文发送，状态写入与发送解耦。"""
-    """生成并分阶段发送一份可安全重入的多关键词图文简报。"""
 
     normalized = _validated_keywords(keywords)
     headers, missing = _load_headers(
@@ -492,7 +521,6 @@ def recover_multi_keyword_report_photo(
     photo_sender: Callable[[bytes], TelegramReceipt] | None = None,
 ) -> dict[str, object]:
     """仅在显式确认文字未收到时补发图片，避免不确定结果造成重复消息。"""
-    """用户确认文字可见后，只恢复多关键词日报的图片阶段。"""
 
     if not confirm_text_visible:
         raise MultiKeywordDeliveryStateError("visible text confirmation required")

@@ -117,3 +117,15 @@ def test_daily_report_request_waits_and_checks_uncertain_status_once() -> None:
     assert text.count("/reports/daily/multi/send?snapshot_date=") == 1
     assert "/reports/daily/multi/status?snapshot_date=" in text
     assert "投递结果不确定，需要人工检查" in text
+
+
+def test_daily_update_runs_telegram_and_wechat_in_parallel() -> None:
+    text = read_script()
+
+    assert 'send_multi_keyword_report "$SNAPSHOT_DATE" &' in text
+    assert 'send_wechat_report "$SNAPSHOT_DATE" &' in text
+    assert 'wait "$telegram_pid"' in text
+    assert 'wait "$wechat_pid"' in text
+    assert 'if [[ "$telegram_status" -ne 0 || "$wechat_status" -ne 0 ]]' in text
+    assert "/reports/daily/multi/wechat/send?snapshot_date=" in text
+    assert 'allowed = {"sent", "already_sent", "disabled"}' in text

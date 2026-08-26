@@ -19,6 +19,8 @@
 
 ## 当前文档
 
+- [`wechat-test-account.md`](wechat-test-account.md)：V1.3.2 微信测试号配置、Migration、手动验收和安全恢复。
+
 - [`project-handoff.md`](project-handoff.md)：项目当前状态与开发交接。
 - [`architecture.md`](architecture.md)：目标架构、模块边界和当前实现状态。
 - [`ubuntu-deployment.md`](ubuntu-deployment.md)：Ubuntu 22.04 局域网容器部署与运行手册。

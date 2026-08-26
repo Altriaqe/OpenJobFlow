@@ -183,6 +183,48 @@ print(f"合并日报投递状态：{payload.get('status')}")
 PY
 }
 
+send_wechat_report() {
+    local snapshot_date="$1"
+
+    docker compose exec -T api python - "$snapshot_date" <<'PY'
+import json
+import os
+import sys
+import urllib.error
+import urllib.request
+
+token = os.getenv("REPORT_TRIGGER_TOKEN")
+if not token:
+    print("微信日报接口调用失败：缺少触发凭据", file=sys.stderr)
+    raise SystemExit(1)
+
+snapshot_date = sys.argv[1]
+request = urllib.request.Request(
+    f"http://127.0.0.1:8000/reports/daily/multi/wechat/send?snapshot_date={snapshot_date}",
+    method="POST",
+    headers={"Authorization": f"Bearer {token}"},
+)
+
+try:
+    with urllib.request.urlopen(request, timeout=120) as response:
+        payload = json.load(response)
+except urllib.error.HTTPError as exc:
+    print(f"微信日报接口调用失败：HTTP {exc.code}", file=sys.stderr)
+    raise SystemExit(1) from None
+except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
+    print(f"微信日报接口调用失败：{type(exc).__name__}", file=sys.stderr)
+    raise SystemExit(1) from None
+
+allowed = {"sent", "already_sent", "disabled"}
+if not isinstance(payload, dict) or payload.get("status") not in allowed:
+    status = payload.get("status") if isinstance(payload, dict) else "invalid"
+    print(f"微信日报接口调用失败：status={status}", file=sys.stderr)
+    raise SystemExit(1)
+
+print(f"微信日报投递状态：{payload.get('status')}")
+PY
+}
+
 merge_keyword_files() {
     local keyword_index="$1"
     local keyword_dir="$2"
@@ -312,6 +354,22 @@ else
     echo "四个关键词快照均已存在，跳过抓取"
 fi
 
-echo "开始发送 Telegram 多关键词图文简报"
-send_multi_keyword_report "$SNAPSHOT_DATE"
-echo "JobFlow 多关键词每日更新与 Telegram 推送完成"
+echo "并行发送 Telegram 图文简报与微信模板摘要"
+send_multi_keyword_report "$SNAPSHOT_DATE" &
+telegram_pid=$!
+send_wechat_report "$SNAPSHOT_DATE" &
+wechat_pid=$!
+
+set +e
+wait "$telegram_pid"
+telegram_status=$?
+wait "$wechat_pid"
+wechat_status=$?
+set -e
+
+if [[ "$telegram_status" -ne 0 || "$wechat_status" -ne 0 ]]; then
+    echo "渠道汇总失败：Telegram=$telegram_status，微信=$wechat_status" >&2
+    exit 1
+fi
+
+echo "JobFlow 多关键词每日更新与双渠道推送完成"

@@ -1,8 +1,8 @@
-from jobflow.models.job import JobRecord
 """每日快照与 Telegram 投递状态持久化，负责幂等认领和结果记录。"""
 
 from datetime import date
 
+from jobflow.models.job import JobRecord
 from jobflow.models.snapshot import (
     DatedSnapshot,
     ReportDelivery,

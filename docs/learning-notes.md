@@ -93,3 +93,11 @@ git diff --check：通过
 第二批已为 `db` 和 `reports` 各模块补充职责说明，标明 mart 只读查询、raw/core 写入、批次生命周期、日/周环比计算、图表渲染和报告发送编排的边界。报告层测试（排除依赖 OpenAI 的服务测试）76 项通过；完整报告服务测试需在安装 `openai` 的项目环境补跑。
 
 第三批已为 Telegram、企业微信、OpenAI、分析 API、健康检查和数据库依赖入口补充链路注释。渠道与报告回归合计 99 项通过；API 和 OpenAI 服务测试仍需完整项目依赖环境补跑。
+
+## V1.3.2 文章排版包首个可行版本
+
+`src/jobflow/reports/wechat_article.py` 目前提供纯离线 `WechatArticleData` 和 `write_wechat_article`：输入固定范围聚合指标与 PNG，输出 `article.md`、`article.html`、`trend.png`、`manifest.json`。HTML 只使用静态标签并进行转义，不包含脚本、远程资源、原始岗位明细或凭据；四个文件使用临时目录写入后替换，避免留下半套文章包。
+
+本机验证：文章包测试 3 项通过。当前仅完成排版包契约，尚未接入 FastAPI、数据库状态或微信真实接口。
+
+配置接线：`.env.example` 和 `compose.yaml` 已加入 `WECHAT_ENABLED`、`WECHAT_APP_ID`、`WECHAT_APP_SECRET`、`WECHAT_OPENID`、`WECHAT_TEMPLATE_ID`。默认关闭微信；Compose 只把变量传入 API 容器，真实值仍由部署者在服务器私有 `.env` 中维护。

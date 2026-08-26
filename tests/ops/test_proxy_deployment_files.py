@@ -79,3 +79,9 @@ def test_base_compose_separates_build_and_runtime_proxy_variables() -> None:
     assert "HTTPS_PROXY: ${JOBFLOW_BUILD_HTTPS_PROXY:-}" in text
     assert "HTTP_PROXY: ${JOBFLOW_HTTP_PROXY:-}" in text
     assert "HTTPS_PROXY: ${JOBFLOW_HTTPS_PROXY:-}" in text
+
+
+def test_api_mounts_runtime_for_generated_article_packages() -> None:
+    text = (ROOT / "compose.yaml").read_text(encoding="utf-8")
+
+    assert "./runtime:/app/runtime" in text

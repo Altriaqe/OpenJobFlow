@@ -32,6 +32,7 @@ JobFlow is intended for learning, research, personal technical practice, and sma
 - Generates deterministic query-based reports without an AI key.
 - Optionally summarizes fixed structured metrics through an OpenAI-compatible API.
 - Optionally sends text and chart output through the Telegram Bot API.
+- Optionally sends an aggregate template summary through a WeChat test account and generates a reviewable article package for manual Official Account publishing.
 - Provides a guarded Bash daily workflow that operators can schedule with their own reviewed systemd units.
 - Includes Pytest contracts and PostgreSQL integration tests, with Ruff for code quality.
 
@@ -262,6 +263,10 @@ External delivery can have an uncertain result when a network failure occurs aft
 
 Database ETL and external message delivery have separate failure boundaries: a Telegram failure does not undo a completed ETL transaction.
 
+## Optional WeChat Official Account Delivery
+
+V1.3.2 adds an optional WeChat test-account template channel and a local article package (`Markdown`, static `HTML`, `PNG`, and manifest). It is disabled by default, contains aggregate fixed-scope samples only, and runs independently from Telegram. Formal personal subscription accounts use manual review and publishing in the first version. See the [WeChat test-account setup guide](docs/wechat-test-account.md) for configuration and server acceptance steps.
+
 ## Ubuntu Deployment
 
 For an always-on self-hosted deployment, the high-level path is:
@@ -375,6 +380,7 @@ This license does not cover third-party recruitment data, websites, content, tra
 ## Documentation
 
 - [Documentation index](docs/README.md)
+- [WeChat test-account setup](docs/wechat-test-account.md)
 - [Architecture and implementation status](docs/architecture.md)
 - [Ubuntu deployment and operations](docs/ubuntu-deployment.md)
 - [Data sources and compliance boundary](docs/data-sources.md)

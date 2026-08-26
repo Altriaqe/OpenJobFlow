@@ -15,6 +15,12 @@ from jobflow.channels.telegram import (
     TelegramDeliveryError,
     TelegramDeliveryUncertain,
 )
+from jobflow.channels.wechat_official import (
+    WechatConfigurationError,
+    WechatDeliveryError,
+    WechatDeliveryUncertain,
+    WechatTokenError,
+)
 from jobflow.reports.service import send_city_report
 from jobflow.reports.daily_service import (
     DailySnapshotNotFound,
@@ -27,6 +33,10 @@ from jobflow.reports.multi_keyword_service import (
     get_multi_keyword_report_status,
     recover_multi_keyword_report_photo,
     send_multi_keyword_report,
+)
+from jobflow.reports.wechat_service import (
+    get_wechat_daily_report_status,
+    send_wechat_report_from_snapshots,
 )
 
 router = APIRouter(prefix="/reports")
@@ -57,6 +67,14 @@ def get_multi_daily_status_reader():
 
 def get_multi_daily_photo_recoverer():
     return recover_multi_keyword_report_photo
+
+
+def get_wechat_daily_report_sender():
+    return send_wechat_report_from_snapshots
+
+
+def get_wechat_daily_status_reader():
+    return get_wechat_daily_report_status
 
 
 def require_report_token(
@@ -189,6 +207,66 @@ def recover_multi_daily_snapshot_photo(
     except (TelegramDeliveryError, TelegramDeliveryUncertain) as exc:
         raise HTTPException(status_code=502, detail="report delivery failed") from exc
     except TelegramConfigurationError as exc:
+        raise HTTPException(status_code=503, detail="report service unavailable") from exc
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="report service unavailable") from exc
+
+
+@router.get("/daily/multi/wechat/status", dependencies=[Depends(require_report_token)])
+def wechat_daily_report_status(
+    snapshot_date: date,
+    connection=Depends(get_connection),
+    status_reader=Depends(get_wechat_daily_status_reader),
+):
+    """查询微信渠道状态，响应不包含消息 ID 和配置值。"""
+    try:
+        return status_reader(connection, snapshot_date=snapshot_date)
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="report service unavailable") from exc
+
+
+@router.post("/daily/multi/wechat/send", dependencies=[Depends(require_report_token)])
+def send_wechat_daily_snapshot_report(
+    snapshot_date: date,
+    connection=Depends(get_connection),
+    report_sender=Depends(get_wechat_daily_report_sender),
+):
+    """发送微信模板摘要；默认关闭时返回 disabled。"""
+    try:
+        return report_sender(connection, snapshot_date=snapshot_date)
+    except MultiKeywordSnapshotMissing as exc:
+        raise HTTPException(status_code=409, detail="daily snapshots incomplete") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail="report delivery requires manual action") from exc
+    except WechatDeliveryUncertain as exc:
+        raise HTTPException(status_code=502, detail="report delivery result uncertain") from exc
+    except WechatDeliveryError as exc:
+        raise HTTPException(status_code=502, detail="report delivery failed") from exc
+    except (WechatConfigurationError, WechatTokenError) as exc:
+        raise HTTPException(status_code=503, detail="report service unavailable") from exc
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="report service unavailable") from exc
+
+
+@router.post("/daily/multi/wechat/resend", dependencies=[Depends(require_report_token)])
+def resend_wechat_daily_snapshot_report(
+    snapshot_date: date,
+    confirm_not_received: bool = False,
+    connection=Depends(get_connection),
+    report_sender=Depends(get_wechat_daily_report_sender),
+):
+    """仅在人工确认手机未收到后，重新认领 uncertain 状态。"""
+    if not confirm_not_received:
+        raise HTTPException(status_code=409, detail="missing receipt confirmation required")
+    try:
+        return report_sender(connection, snapshot_date=snapshot_date, allow_uncertain=True)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail="report delivery requires manual action") from exc
+    except WechatDeliveryUncertain as exc:
+        raise HTTPException(status_code=502, detail="report delivery result uncertain") from exc
+    except WechatDeliveryError as exc:
+        raise HTTPException(status_code=502, detail="report delivery failed") from exc
+    except (WechatConfigurationError, WechatTokenError) as exc:
         raise HTTPException(status_code=503, detail="report service unavailable") from exc
     except Exception as exc:
         raise HTTPException(status_code=503, detail="report service unavailable") from exc
