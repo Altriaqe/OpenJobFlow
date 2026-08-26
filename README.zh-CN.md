@@ -259,13 +259,13 @@ POST /reports/cities/send?mode=ai
 Authorization: Bearer <YOUR_REPORT_TRIGGER_TOKEN>
 ```
 
-如果 Telegram 已收到请求后才发生网络故障，外部消息推送的结果可能不确定。JobFlow 不会自动重复一次结果不确定的普通发送。高级多关键词流程会记录推送状态，并提供显式的仅补图恢复路径；该操作要求人工确认文字已可见。恢复流程参见 [Ubuntu 部署与运维指南](docs/ubuntu-deployment.md)。
+如果 Telegram 已收到请求后才发生网络故障，外部消息推送的结果可能不确定。JobFlow 不会自动重复一次结果不确定的普通发送。高级多关键词流程会记录推送状态，并提供显式的仅补图恢复路径；该操作要求人工确认文字已可见。恢复流程参见 [Ubuntu 部署与运维指南](docs/guides/ubuntu-deployment.md)。
 
 数据库 ETL 与外部消息推送具有不同的失败边界：Telegram 发送失败不会回滚已经完成的 ETL 事务。
 
 ## 可选微信公众号推送
 
-V1.3.2 增加可选的微信测试号模板摘要，以及由 `Markdown`、静态 `HTML`、`PNG` 和清单组成的公众号文章排版包。该功能默认关闭，只包含固定范围聚合样本，与 Telegram 独立运行。正式个人订阅号首版采用人工检查和发布。配置与服务器验收步骤参见[微信测试号配置指南](docs/wechat-test-account.md)。
+V1.3.2 增加可选的微信测试号模板摘要，以及由 `Markdown`、静态 `HTML`、`PNG` 和清单组成的公众号文章排版包。该功能默认关闭，只包含固定范围聚合样本，与 Telegram 独立运行。正式个人订阅号首版采用人工检查和发布。配置与服务器验收步骤参见[微信测试号配置指南](docs/guides/wechat-test-account.md)。
 
 ## Ubuntu 部署
 
@@ -279,7 +279,7 @@ V1.3.2 增加可选的微信测试号模板摘要，以及由 `Markdown`、静�
 
 高级每日工作流还需要一个独立、合法授权的采集器、专用 Chrome 环境，以及平台要求的人工登录或安全验证。JobFlow 不会绕过验证码、风控、身份验证、登录限制或访问控制。
 
-仓库提供 `ops/daily_update.sh`，**不提供可直接安装的 systemd unit 文件**。运行检查、VNC 辅助登录、失败处理和恢复背景参见 [Ubuntu 部署与运维指南](docs/ubuntu-deployment.md)。启用前请审查你自行创建的每个 unit。将 `<SERVER_IP>`、`<SSH_USER>` 和 `<JOBFLOW_DIR>` 等所有占位符替换为你自己的私有值，并且不要提交这些值。
+仓库提供 `ops/daily_update.sh`，**不提供可直接安装的 systemd unit 文件**。运行检查、VNC 辅助登录、失败处理和恢复背景参见 [Ubuntu 部署与运维指南](docs/guides/ubuntu-deployment.md)。启用前请审查你自行创建的每个 unit。将 `<SERVER_IP>`、`<SSH_USER>` 和 `<JOBFLOW_DIR>` 等所有占位符替换为你自己的私有值，并且不要提交这些值。
 
 ## 配置与 DIY
 
@@ -380,9 +380,9 @@ JobFlow 自有代码和文档依据 [MIT License](LICENSE) 发布，版权归 20
 ## 详细文档
 
 - [文档索引](docs/README.md)
-- [微信测试号配置指南](docs/wechat-test-account.md)
-- [架构与实现状态](docs/architecture.md)
-- [Ubuntu 部署与运维](docs/ubuntu-deployment.md)
-- [数据源与合规边界](docs/data-sources.md)
-- [学习与故障排查笔记](docs/learning-notes.md)
-- [平台演进设计](docs/platform-evolution-design.md)
+- [微信测试号配置指南](docs/guides/wechat-test-account.md)
+- [架构与实现状态](docs/reference/architecture.md)
+- [Ubuntu 部署与运维](docs/guides/ubuntu-deployment.md)
+- [数据源与合规边界](docs/reference/data-sources.md)
+- [学习与故障排查笔记](docs/development/learning-notes.md)
+- [平台演进设计](docs/reference/platform-evolution-design.md)

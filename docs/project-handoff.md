@@ -1,31 +1,35 @@
 # JobFlow 项目当前状态与开发交接
 
-更新日期：2026-08-26
+更新日期：2026-08-27
 
 这份文档是上下文压缩、新对话、换电脑或暂停开发后的第一入口。继续开发前先读取本文件，再用代码、测试、Git 和服务器实际输出确认可能变化的状态。
 
-## 0. 2026-08-26 当前停点
+## 0. 2026-08-27 当前停点
 
-公开仓库已经使用单一清洁提交发布，当前本机开发入口为：
+V1.3.2 已在 Ubuntu 完成微信公众号测试号手动主链路验收。当前代码与 Git 停点为：
 
 ```text
 仓库：Altriaqe/OpenJobFlow
 本机目录：<LOCAL_JOBFLOW_DIR>
-公开发布基线 origin/main：554965b 开源V1.3.1
+稳定分支 main / origin/main：d3fd55e 添加 V1.3.2 微信公众号每日推送
+开发分支：bugfix/wechat-article-permissions
+开发分支提交：03f411f、f7522f0、41bd25a
 Ubuntu 项目目录：<JOBFLOW_DIR>
-Ubuntu main / origin/main：554965b 开源V1.3.1
+Ubuntu main / origin/main：d3fd55e
 ```
 
-Ubuntu 已验证 `/health=ok`、`/ready=ready`、API/PostgreSQL healthy、Mihomo running、`jobflow-daily-update.timer=active`。真实 `.env` 和个人 Mihomo 配置只保存在服务器，不进入公开 Git。
+Ubuntu 已完成 Migration 008/009、V1.3.2 镜像构建和 API 重启，验证 `/health=ok`、`/ready=ready`、PostgreSQL healthy、Mihomo running。微信五个配置变量均已在服务器私有 `.env` 中设置，但实际值不得进入 Git、文档、截图或聊天。
 
-当前正在开发 V1.3.2 微信公众号每日推送。需求和架构已经完成讨论，正式 PRD 和实施计划为：
+2026-08-27 使用 `2026-08-26` 的四关键词快照完成真实微信测试号验收：接口返回 `sent`，手机收到 `JobFlow 日报`，文章包包含 `article.md`、`article.html`、`manifest.json`、`trend.png`。这证明手动微信主链路可行，但尚未证明 V1.3.2 已经由正式 systemd timer 自动触发。
+
+正式 PRD 和实施计划为：
 
 ```text
-docs/superpowers/specs/2026-08-26-wechat-official-daily-delivery-design.md
-docs/superpowers/plans/2026-08-26-wechat-official-daily-delivery.md
+docs/development/specs/2026-08-26-wechat-official-daily-delivery-design.md
+docs/development/plans/2026-08-26-wechat-official-daily-delivery.md
 ```
 
-已经确认：
+当前已经确认：
 
 - 个人主体，先用微信公众平台测试号验证；
 - 测试号自动发送聚合摘要；
@@ -35,20 +39,26 @@ docs/superpowers/plans/2026-08-26-wechat-official-daily-delivery.md
 - 只公开聚合指标和趋势图；
 - 结果不确定时禁止自动重发；
 - 真实 appsecret、openid 和模板 ID 不写入 Git。
-- V1.3.2 本机实现已覆盖：微信渠道适配器、模板字段、公众号文章包、Migration 009、独立状态机、FastAPI 发送/状态/补发接口，以及 Telegram/微信并行 Shell 编排。
-- 本机非 PostgreSQL 回归 305 passed；Ruff、Compose 解析、Shell 语法和公开凭据扫描通过。真实 PostgreSQL Migration、测试号手机送达和 systemd 定时任务仍待 Ubuntu 验收。
-- V1.3.2 推送策略：本机验证通过后形成服务器候选提交，维护者从 Ubuntu 拉取并完成私有配置与真实联调；只有真实验收通过后才把状态写成正式完成。
+- V1.3.2 已覆盖微信渠道适配器、模板字段、公众号文章包、Migration 009、独立状态机、FastAPI 发送/状态/补发接口，以及 Telegram/微信并行 Shell 编排；
+- `WECHAT_ENABLED=true` 已进入服务器私有配置，手动发送与手机实收通过；
+- `daily_update.sh` 会并行调用 Telegram 与微信，并等待两个渠道各自结束；
+- 历史文章包因 `tempfile.mkdtemp()` 默认 `0700` 导致宿主机需 `sudo` 读取，修复已在 `bugfix/wechat-article-permissions` 完成但尚未推送或创建 PR；
+- 当前权限修复分支回归为 `306 passed, 1 skipped`，Ruff 通过；Linux 精确权限位待 Ubuntu 拉取后验收；
+- 自动推送的代码与配置条件已经具备，但今天没有读取 timer 实时状态，也没有完成一次 V1.3.2 正式定时实收，不能写成“自动微信推送已验收”。
+- `docs/` 已按 `guides`、`reference`、`development`、`operations`、`archive` 重新分类；全库本地 Markdown 链接和公开敏感信息扫描已加入自动测试，本机非 integration 回归为 `308 passed, 1 skipped`。该整理尚未提交。
 
-测试号账号准备已经完成到：接收微信已关注测试号，`JobFlow日报` 测试模板已创建。下一步不是直接写代码，而是先根据 PRD 编写实施计划。当前本机精确提交和是否领先远端必须以 `git status`、`git log` 为准。
+下一步是先审查并提交文档目录整理，再推送 `bugfix/wechat-article-permissions`、创建 PR、合并到 `main`。合并后由 Ubuntu 拉取、重建并等待下一次正常每日任务，验证文章包权限和双渠道自动推送。当前精确状态仍以 `git status`、`git log` 和服务器实际输出为准。
 
 新对话恢复提示词：
 
 ```text
-继续 OpenJobFlow 微信公众号每日推送功能。
+继续 OpenJobFlow V1.3.2 收尾与权限修复 PR。
 项目路径：<LOCAL_JOBFLOW_DIR>
-请先阅读 docs/superpowers/specs/2026-08-26-wechat-official-daily-delivery-design.md
-和 docs/project-handoff.md，然后检查 git status --short --branch 与 git log -5 --oneline。
-不要重新讨论已确认需求，也不要直接写代码；先根据 PRD 编写实施计划。
+请先阅读 docs/project-handoff.md、
+docs/development/specs/2026-08-27-wechat-article-package-permissions-design.md
+和 docs/development/plans/2026-08-27-wechat-article-package-permissions.md，
+然后检查 git status --short --branch 与 git log -5 --oneline。
+权限修复代码和测试已完成；下一步是审查、推送功能分支并创建 PR，不要直接推送 main。
 真实 appsecret、openid 和模板 ID 不得写入 Git。
 ```
 
@@ -231,7 +241,7 @@ docker compose ps
 docker compose up -d postgres api
 ```
 
-详细环境、SCP、权限、代理、日志、停机和防火墙步骤见 [`ubuntu-deployment.md`](ubuntu-deployment.md)。
+详细环境、SCP、权限、代理、日志、停机和防火墙步骤见 [`ubuntu-deployment.md`](guides/ubuntu-deployment.md)。
 
 ## 7. 当前运行证据
 
@@ -311,7 +321,7 @@ Ubuntu 正式脚本：可执行，bash -n 通过
 
 ```text
 Windows：main 与 origin/main 在 eefad84，工作区在本轮文档维护前干净
-Windows 当前未提交：README.md、docs/architecture.md、docs/project-handoff.md、docs/ubuntu-deployment.md 的 V1.2 真实验收更新
+Windows 当前未提交：README.md、docs/reference/architecture.md、docs/project-handoff.md、docs/guides/ubuntu-deployment.md 的 V1.2 真实验收更新
 Ubuntu：main 与 origin/main 在 eefad84，工作区同步时干净
 Ubuntu：服务器手工脚本已另存到项目外备份后，使用仓库内可执行版本
 排除：.env、真实数据、Chrome Profile、Cookie、订阅、VNC 凭据和个人知识库
@@ -325,7 +335,7 @@ Git 状态和服务器提交会变化。新对话开始后必须重新执行 `gi
 
 ```text
 JobFlow Windows：main / origin/main = 8c5f413
-JobFlow Windows 未提交：README.md、docs/architecture.md、docs/project-handoff.md、docs/ubuntu-deployment.md、.superpowers/
+JobFlow Windows 未提交：README.md、docs/reference/architecture.md、docs/project-handoff.md、docs/guides/ubuntu-deployment.md、.superpowers/
 scraper 最新上游与 Ubuntu HEAD：2bc40f5
 scraper 新版本机分支：codex/fix-chrome151-foreground-target
 scraper 修复提交：7020397，已推送到个人 Fork
@@ -336,6 +346,18 @@ scraper Ubuntu：master 基线 2bc40f5，生产脚本已应用未提交兼容补
 ```
 
 ## 9. 下一步
+
+### V1.3.2 收尾与首个 PR
+
+```text
+审查并提交 docs 目录整理
+→ 推送 bugfix/wechat-article-permissions
+→ 创建 PR，不直接推送 main
+→ 检查测试和公开差异
+→ 合并后由 Ubuntu 从 main 快进拉取并重建 API
+→ 等待下一次正常每日任务
+→ 验证微信与 Telegram 自动结果、文章包 0755/0644 和 timer 实时状态
+```
 
 ### 运行观察
 
@@ -375,6 +397,8 @@ V1.2 已专用于可选服务器代理；V1.3 已完成的四城市三页范围�
 - daily script 使用 query 固定简报，不应表述为本次真实调用 AI；
 - 真实 BOSS 快照不进入 Git；
 - 代码实现、离线测试、真实外部联调是三个不同完成层级。
+- 现有 `docker compose run --rm migrate` 会从 001 重放全部 migration；服务器历史数据使旧 Migration 005 的薪资约束失败。本次部署已单独执行 008 恢复正确约束，再执行 009。后续应把 migration runner 改为带版本记录的增量执行，不能把本次手工顺序当作长期方案。
+- V1.3.2 手动微信送达已经验收，但 `jobflow-daily-update.timer` 的 2026-08-27 实时 `enabled/active/next` 输出尚未重新采集，第一次双渠道正式定时结果也尚未验收。
 
 ## 11. 新对话交接提示词
 
@@ -382,7 +406,7 @@ V1.2 已专用于可选服务器代理；V1.3 已完成的四城市三页范围�
 
 ```text
 这是 JobFlow 项目，请先完整阅读 <LOCAL_JOBFLOW_DIR>/docs/project-handoff.md，
-再读取 README.md、docs/ubuntu-deployment.md、git status 和最近 5 个提交。
+再读取 README.md、docs/guides/ubuntu-deployment.md、git status 和最近 5 个提交。
 个人知识库路径只在本机私有维护文档中记录，不进入公开仓库。
 请以代码、测试和 Git 为正式事实来源，不要把计划写成已完成。
 我是初学者，指导时说明目标、步骤、结果、为什么这样做和知识点；

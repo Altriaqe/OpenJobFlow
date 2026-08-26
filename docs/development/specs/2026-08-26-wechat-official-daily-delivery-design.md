@@ -432,7 +432,7 @@ WECHAT_TEMPLATE_ID=
 项目路径：<LOCAL_JOBFLOW_DIR>
 
 请先阅读：
-docs/superpowers/specs/2026-08-26-wechat-official-daily-delivery-design.md
+docs/development/specs/2026-08-26-wechat-official-daily-delivery-design.md
 docs/project-handoff.md
 
 然后检查：

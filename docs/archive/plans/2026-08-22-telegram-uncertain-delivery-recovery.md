@@ -1003,7 +1003,7 @@ git commit -m "fix: 完善日报不确定投递提示与等待时间"
 **Files:**
 - Modify after server acceptance: `README.md`
 - Modify after server acceptance: `docs/project-handoff.md`
-- Modify after server acceptance: `docs/ubuntu-deployment.md`
+- Modify after server acceptance: `docs/guides/ubuntu-deployment.md`
 - Read only during recovery: `.env`
 
 **Interfaces:**
@@ -1125,7 +1125,7 @@ Expected: 状态为 `completed_text_uncertain`、`photo_sent=true`、`manual_act
 
 - [ ] **Step 8: 服务器验收后维护公开与个人文档**
 
-在 `README.md` 和 `docs/ubuntu-deployment.md` 增加以下公开说明，所有个人值继续使用占位：
+在 `README.md` 和 `docs/guides/ubuntu-deployment.md` 增加以下公开说明，所有个人值继续使用占位：
 
 ```text
 Telegram Bot API 不提供客户端幂等键。JobFlow 在超时或响应中断时会停止自动重试，
@@ -1134,12 +1134,12 @@ Telegram Bot API 不提供客户端幂等键。JobFlow 在超时或响应中断�
 REPORT_TRIGGER_TOKEN 均需按部署环境配置，禁止提交真实凭据。
 ```
 
-在 `docs/project-handoff.md` 记录实际 commit、Migration 007 执行结果、本机测试数、2026-08-22 补图结果和下一次 timer 时间。保留工作区已有文档改动，先查看 `git diff -- README.md docs/project-handoff.md docs/ubuntu-deployment.md` 再合并，不覆盖先前内容。
+在 `docs/project-handoff.md` 记录实际 commit、Migration 007 执行结果、本机测试数、2026-08-22 补图结果和下一次 timer 时间。保留工作区已有文档改动，先查看 `git diff -- README.md docs/project-handoff.md docs/guides/ubuntu-deployment.md` 再合并，不覆盖先前内容。
 
 - [ ] **Step 9: 用户授权后提交文档，不混入业务代码**
 
 ```powershell
-git add README.md docs/project-handoff.md docs/ubuntu-deployment.md
+git add README.md docs/project-handoff.md docs/guides/ubuntu-deployment.md
 git commit -m "docs: 更新 Telegram 防重复与只补图维护说明"
 git push origin main
 ```

@@ -146,7 +146,7 @@ def test_default_mode_does_not_call_ai(monkeypatch):
 
 - [ ] **Step 5: Ubuntu 验收前暂停**
 
-先向用户报告 Windows 验收结果和待变更文件；未经明确授权不提交、不推送、不重建 Ubuntu 镜像。得到授权后，再按 `docs/ubuntu-deployment.md` 在 SSH 会话中分别验证 `mode=query` 和 `mode=ai`，且不展示任何密钥或 Token。
+先向用户报告 Windows 验收结果和待变更文件；未经明确授权不提交、不推送、不重建 Ubuntu 镜像。得到授权后，再按 `docs/guides/ubuntu-deployment.md` 在 SSH 会话中分别验证 `mode=query` 和 `mode=ai`，且不展示任何密钥或 Token。
 
 ## 验收结果定义
 

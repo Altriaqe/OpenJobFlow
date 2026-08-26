@@ -137,8 +137,8 @@ Report test output and wait for review. Do not commit automatically.
 - Modify: `compose.yaml`
 - Modify: `docs/project-handoff.md`
 - Modify: `README.md`
-- Modify: `docs/ubuntu-deployment.md`
-- Modify: `docs/architecture.md`
+- Modify: `docs/guides/ubuntu-deployment.md`
+- Modify: `docs/reference/architecture.md`
 
 **Interfaces:**
 - Compose accepts `JOBFLOW_HTTP_PROXY`, `JOBFLOW_HTTPS_PROXY`, and `JOBFLOW_NO_PROXY` from the shell environment and passes them to `api` and one-shot `etl`/tool containers without hard-coding a secret.

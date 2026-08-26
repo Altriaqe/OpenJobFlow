@@ -259,13 +259,13 @@ POST /reports/cities/send?mode=ai
 Authorization: Bearer <YOUR_REPORT_TRIGGER_TOKEN>
 ```
 
-External delivery can have an uncertain result when a network failure occurs after Telegram receives a request. JobFlow does not automatically repeat an uncertain normal send. The advanced multi-keyword flow records delivery state and exposes an explicit photo-recovery path that requires visible confirmation of the text. See the [Ubuntu deployment and operations guide](docs/ubuntu-deployment.md) for the recovery procedure.
+External delivery can have an uncertain result when a network failure occurs after Telegram receives a request. JobFlow does not automatically repeat an uncertain normal send. The advanced multi-keyword flow records delivery state and exposes an explicit photo-recovery path that requires visible confirmation of the text. See the [Ubuntu deployment and operations guide](docs/guides/ubuntu-deployment.md) for the recovery procedure.
 
 Database ETL and external message delivery have separate failure boundaries: a Telegram failure does not undo a completed ETL transaction.
 
 ## Optional WeChat Official Account Delivery
 
-V1.3.2 adds an optional WeChat test-account template channel and a local article package (`Markdown`, static `HTML`, `PNG`, and manifest). It is disabled by default, contains aggregate fixed-scope samples only, and runs independently from Telegram. Formal personal subscription accounts use manual review and publishing in the first version. See the [WeChat test-account setup guide](docs/wechat-test-account.md) for configuration and server acceptance steps.
+V1.3.2 adds an optional WeChat test-account template channel and a local article package (`Markdown`, static `HTML`, `PNG`, and manifest). It is disabled by default, contains aggregate fixed-scope samples only, and runs independently from Telegram. Formal personal subscription accounts use manual review and publishing in the first version. See the [WeChat test-account setup guide](docs/guides/wechat-test-account.md) for configuration and server acceptance steps.
 
 ## Ubuntu Deployment
 
@@ -279,7 +279,7 @@ For an always-on self-hosted deployment, the high-level path is:
 
 The advanced daily workflow also needs an independent, legally authorized collector, a dedicated Chrome environment, and manual login or platform security verification where required. JobFlow does not bypass CAPTCHA, risk controls, authentication, login restrictions, or access controls.
 
-The repository provides `ops/daily_update.sh`; it does not provide ready-to-install systemd unit files. See [Ubuntu deployment and operations guidance](docs/ubuntu-deployment.md) for runtime checks, VNC-assisted login, failure handling, and recovery context. Review any unit you create before enabling it. Replace every placeholder such as `<SERVER_IP>`, `<SSH_USER>`, and `<JOBFLOW_DIR>` with your own private value; do not commit those values.
+The repository provides `ops/daily_update.sh`; it does not provide ready-to-install systemd unit files. See [Ubuntu deployment and operations guidance](docs/guides/ubuntu-deployment.md) for runtime checks, VNC-assisted login, failure handling, and recovery context. Review any unit you create before enabling it. Replace every placeholder such as `<SERVER_IP>`, `<SSH_USER>`, and `<JOBFLOW_DIR>` with your own private value; do not commit those values.
 
 ## Configuration and DIY
 
@@ -380,9 +380,9 @@ This license does not cover third-party recruitment data, websites, content, tra
 ## Documentation
 
 - [Documentation index](docs/README.md)
-- [WeChat test-account setup](docs/wechat-test-account.md)
-- [Architecture and implementation status](docs/architecture.md)
-- [Ubuntu deployment and operations](docs/ubuntu-deployment.md)
-- [Data sources and compliance boundary](docs/data-sources.md)
-- [Learning and troubleshooting notes](docs/learning-notes.md)
-- [Platform evolution design](docs/platform-evolution-design.md)
+- [WeChat test-account setup](docs/guides/wechat-test-account.md)
+- [Architecture and implementation status](docs/reference/architecture.md)
+- [Ubuntu deployment and operations](docs/guides/ubuntu-deployment.md)
+- [Data sources and compliance boundary](docs/reference/data-sources.md)
+- [Learning and troubleshooting notes](docs/development/learning-notes.md)
+- [Platform evolution design](docs/reference/platform-evolution-design.md)

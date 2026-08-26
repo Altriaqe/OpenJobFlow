@@ -24,7 +24,7 @@
 
 - `src/jobflow/reports/wechat_article.py`：在文章包原子替换前显式设置最终权限。
 - `tests/reports/test_wechat_article.py`：验证显式 `chmod` 调用、POSIX 最终权限和覆盖生成后的权限。
-- `docs/wechat-test-account.md`：修正 `runtime` 权限命令，并记录普通用户直接读取文章包的验收标准。
+- `docs/guides/wechat-test-account.md`：修正 `runtime` 权限命令，并记录普通用户直接读取文章包的验收标准。
 
 ### Task 1: 显式设置并验证文章包权限
 
@@ -189,7 +189,7 @@ Expected: 只有实现文件、测试文件和尚未提交的实施计划文件�
 ### Task 2: 更新 Ubuntu 验收说明并完成回归
 
 **Files:**
-- Modify: `docs/wechat-test-account.md:49-67,94-100`
+- Modify: `docs/guides/wechat-test-account.md:49-67,94-100`
 
 **Interfaces:**
 - Consumes: Task 1 生成的 `0755` 目录和 `0644` 文件。

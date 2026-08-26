@@ -26,7 +26,7 @@
 - Modify: \`ops/daily_update.sh\` — 定义 API 就绪等待参数和 \`wait_for_api_ready\`，并在快照检查前调用。
 - Modify: \`tests/ops/test_daily_update_script.py\` — 以静态契约测试锁定等待边界、curl 参数和调用顺序。
 - Modify after live acceptance: \`docs/project-handoff.md\` — 记录已经真实验收的开机恢复结果和下一步状态，不提前宣称定时推送成功。
-- Modify after live acceptance: \`docs/ubuntu-deployment.md\` — 补充 API 就绪等待的排障与验收命令。
+- Modify after live acceptance: \`docs/guides/ubuntu-deployment.md\` — 补充 API 就绪等待的排障与验收命令。
 
 ### Task 1: 用 TDD 增加 API 就绪等待
 
@@ -174,7 +174,7 @@ Expected: 只有等待函数、调用点和对应测试属于本任务；不得�
 先向用户报告测试结果和精确文件列表，并等待用户明确授权。获得授权后才执行：
 
 \`\`\`powershell
-git add -- ops/daily_update.sh tests/ops/test_daily_update_script.py docs/superpowers/specs/2026-08-24-daily-update-api-readiness-design.md docs/superpowers/plans/2026-08-24-daily-update-api-readiness-implementation.md
+git add -- ops/daily_update.sh tests/ops/test_daily_update_script.py docs/archive/specs/2026-08-24-daily-update-api-readiness-design.md docs/archive/plans/2026-08-24-daily-update-api-readiness-implementation.md
 git diff --cached --check
 git diff --cached --stat
 git commit -m "fix: 等待 API 就绪后再运行每日任务"
@@ -249,7 +249,7 @@ Expected: 第二条命令输出 \`inactive\`；没有启动日报、没有 Teleg
 
 **Files:**
 - Modify after evidence: \`docs/project-handoff.md\`
-- Modify after evidence: \`docs/ubuntu-deployment.md\`
+- Modify after evidence: \`docs/guides/ubuntu-deployment.md\`
 
 **Interfaces:**
 - Consumes: Task 2 部署后的下一次真实 09:00 定时运行。
@@ -289,7 +289,7 @@ Expected: 当天只收到一份文字简报和一张配套图。若文字或图�
 - 2026-08-25 已验收每日任务的 API 就绪等待：服务器开机恢复后，脚本先等待 \`/ready\`，再进入快照检查；本次 systemd 结果为 \`success\`、退出码为 0，Telegram 仅收到一份文字和一张图片。
 \`\`\`
 
-在 \`docs/ubuntu-deployment.md\` 的每日任务排障区补充：
+在 \`docs/guides/ubuntu-deployment.md\` 的每日任务排障区补充：
 
 \`\`\`markdown
 每日脚本会在快照检查前等待 \`http://127.0.0.1:8000/ready\`，总等待时间最多 5 分钟。若日志显示“API 在 5 分钟内未就绪”，先检查 \`docker compose ps\`、\`curl http://127.0.0.1:8000/ready\` 和 API 容器日志，不要直接重试 Telegram 发送接口。
@@ -300,8 +300,8 @@ Expected: 当天只收到一份文字简报和一张配套图。若文字或图�
 - [ ] **Step 5: 运行文档检查并等待单独提交授权**
 
 \`\`\`powershell
-git diff --check -- docs/project-handoff.md docs/ubuntu-deployment.md
-git diff -- docs/project-handoff.md docs/ubuntu-deployment.md
+git diff --check -- docs/project-handoff.md docs/guides/ubuntu-deployment.md
+git diff -- docs/project-handoff.md docs/guides/ubuntu-deployment.md
 git status --short --branch
 \`\`\`
 

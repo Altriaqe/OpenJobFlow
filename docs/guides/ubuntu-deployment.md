@@ -348,4 +348,4 @@ sudo systemd-analyze cat-config systemd/logind.conf |
 
 未完成：整台 Ubuntu 重启恢复、连续多日运行、登录失效通知、后续版本多关键词与更大抓取范围、公网域名、Caddy、HTTPS、完整鉴权、备份恢复、监控告警。Chrome 151 前台 Target 修复在 Ubuntu 仍是 scraper 工作区补丁；本机修复已提交并创建上游 PR `#68`，但尚未合并。
 
-项目整体上下文与下一步见 [`project-handoff.md`](project-handoff.md)。
+项目整体上下文与下一步见 [`project-handoff.md`](../project-handoff.md)。

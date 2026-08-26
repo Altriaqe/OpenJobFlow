@@ -42,7 +42,7 @@
 - Modify `tests/reports/test_daily_service.py`：覆盖周趋势函数重命名后的兼容性。
 - Modify `tests/api/test_reports.py`：新增合并接口鉴权与错误映射测试。
 - Modify `tests/ops/test_daily_update_script.py`：更新四关键词脚本契约。
-- Modify `README.md`、`docs/architecture.md`、`docs/ubuntu-deployment.md`、`docs/project-handoff.md`：只按实际测试与服务器验收结果更新。
+- Modify `README.md`、`docs/reference/architecture.md`、`docs/guides/ubuntu-deployment.md`、`docs/project-handoff.md`：只按实际测试与服务器验收结果更新。
 
 ---
 
@@ -949,8 +949,8 @@ git commit -m "feat: 增加每日多关键词断点采集"
 
 **Files:**
 - Modify after verified facts only: `README.md`
-- Modify after verified facts only: `docs/architecture.md`
-- Modify after verified facts only: `docs/ubuntu-deployment.md`
+- Modify after verified facts only: `docs/reference/architecture.md`
+- Modify after verified facts only: `docs/guides/ubuntu-deployment.md`
 - Modify after verified facts only: `docs/project-handoff.md`
 
 **Interfaces:**
