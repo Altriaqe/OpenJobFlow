@@ -139,7 +139,7 @@
 **Files:**
 - Modify: `src/jobflow/adapters`, `src/jobflow/collectors`, `src/jobflow/models`, `src/jobflow/db`, `src/jobflow/workers`, `src/jobflow/reports`, `src/jobflow/ai`, `src/jobflow/api`, `src/jobflow/channels`, `src/jobflow/cli.py`, `src/jobflow/snapshot_backfill.py`, `ops/daily_update.sh`
 - Modify: `docs/architecture.md`, `docs/learning-notes.md`, `docs/project-handoff.md`
-- Modify: `D:\Altria_note\Altria的知识库\JobFlow\JobFlow 项目总览.md`, `JobFlow 项目架构与演进设计.md`
+- Modify: `<OBSIDIAN_VAULT>/JobFlow/JobFlow 项目总览.md`, `JobFlow 项目架构与演进设计.md`
 
 - [ ] Step 1: 为每个 Python 模块补充模块职责、上游输入、下游输出和失败边界说明。
 - [ ] Step 2: 为公开函数和关键私有函数补充中文 docstring，说明参数、返回值、事务或幂等原因；不改业务逻辑。
