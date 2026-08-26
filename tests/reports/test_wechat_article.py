@@ -1,5 +1,8 @@
 from datetime import date
 import json
+import os
+from pathlib import Path
+import stat
 
 import pytest
 
@@ -86,3 +89,38 @@ def test_article_package_can_be_replaced_as_a_complete_directory(tmp_path):
         "trend.png",
         "manifest.json",
     }
+
+
+def test_article_package_sets_explicit_permissions(tmp_path, monkeypatch):
+    """跨平台确认实现主动设置文件与目录权限，而不是依赖 umask。"""
+    chmod_calls: list[tuple[str, int]] = []
+    original_chmod = Path.chmod
+
+    def record_chmod(path: Path, mode: int) -> None:
+        chmod_calls.append((path.name, mode))
+        original_chmod(path, mode)
+
+    monkeypatch.setattr(Path, "chmod", record_chmod)
+
+    output = tmp_path / "wechat"
+    manifest = write_wechat_article(sample_data(), PNG, output)
+
+    file_modes = {name: mode for name, mode in chmod_calls if name in manifest.files}
+    assert file_modes == {name: 0o644 for name in manifest.files}
+    assert sum(
+        name.startswith("wechat-article-") and mode == 0o755
+        for name, mode in chmod_calls
+    ) == 1
+
+
+@pytest.mark.skipif(os.name == "nt", reason="需要 POSIX 权限位语义")
+def test_article_package_permissions_survive_atomic_replacement(tmp_path):
+    """Linux 首次生成和覆盖生成后都必须保持宿主机可读权限。"""
+    output = tmp_path / "wechat"
+
+    for _ in range(2):
+        manifest = write_wechat_article(sample_data(), PNG, output)
+
+        assert stat.S_IMODE(output.stat().st_mode) == 0o755
+        for filename in manifest.files:
+            assert stat.S_IMODE((output / filename).stat().st_mode) == 0o644
