@@ -6,22 +6,21 @@
 
 ## 0. 2026-08-27 当前停点
 
-V1.3.3“微信每日新增岗位公告”已在本机功能分支
-`feature/wechat-daily-new-jobs-article` 完成代码与离线测试。当前实现按
+V1.3.3“微信每日新增岗位公告”已通过 PR #2 合并到 `main`。当前实现按
 `source + external_id` 计算同关键词前日差集，生成 `article.md`、
 `article.html`、`cover.png`、`trend.png` 和 `manifest.json`，正式每日脚本保持
 Telegram 自动发送，微信侧改为只生成文章包并等待人工发布。V1.3.2 测试号接口继续保留供手动回归。
 
-当前只完成本机实现与测试，不代表生产验收。Ubuntu 真实快照生成、五件套权限复核、正式公众号后台人工发布和手机端链接检查仍待用户执行；本功能分支已提交并推送，PR #2 正在审查，尚未合并或部署。
+当前只完成代码合并与本机测试，不代表生产验收。Ubuntu 真实快照生成、五件套权限复核、正式公众号后台人工发布和手机端链接检查仍待用户执行；本机与远程 `main` 已同步到合并提交 `b296f82`，尚未部署。
 
 V1.3.2 已在 Ubuntu 完成 Telegram 与微信公众号测试号正式定时首轮验收。当前代码与 Git 停点为：
 
 ```text
 仓库：Altriaqe/OpenJobFlow
 本机目录：<LOCAL_JOBFLOW_DIR>
-稳定分支 main / origin/main：416b739 PR #1 合并提交
-已合并分支：bugfix/wechat-article-permissions
-PR：#1 已合并并关闭
+稳定分支 main / origin/main：b296f82 PR #2 合并提交
+已合并分支：bugfix/wechat-article-permissions、feature/wechat-daily-new-jobs-article
+PR：#1、#2 已合并并关闭
 Ubuntu 项目目录：<JOBFLOW_DIR>
 Ubuntu main / origin/main：416b739
 ```
