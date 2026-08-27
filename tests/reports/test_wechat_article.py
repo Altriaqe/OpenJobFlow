@@ -53,15 +53,15 @@ def posting(
     ("skills", "expected"),
     [
         (("Java", "统招本科", "Spring"), ("本科", "Java、Spring")),
-        (("Java", "Spring"), ("未注明", "Java、Spring")),
+        (("Java", "Spring"), (None, "Java、Spring")),
         (("统招本科",), ("本科", "暂无明确技能标签")),
         (("本科", "硕士", "Python"), ("本科", "Python")),
-        (("  ", "Python"), ("未注明", "Python")),
+        (("  ", "Python"), (None, "Python")),
     ],
 )
 def test_requirement_labels_extract_education_and_filter_skills(
     skills: tuple[str, ...],
-    expected: tuple[str, str],
+    expected: tuple[str | None, str],
 ) -> None:
     assert _requirement_labels(posting("requirements", skills=skills)) == expected
 
@@ -122,7 +122,7 @@ def test_html_has_no_script_remote_resource_or_sensitive_fields(tmp_path):
     assert "暂无明确技能标签" in html
     assert "薪资面议" in html
     assert 'src="trend.png"' in html
-    assert html.count("学历要求：未注明") == 3
+    assert "学历要求：" not in html
 
 
 def test_markdown_and_html_render_education_without_repeating_skill_tag(tmp_path):
@@ -154,6 +154,15 @@ def test_markdown_and_html_render_education_without_repeating_skill_tag(tmp_path
     assert "技能要求：Java、Spring" in document
     assert "技能要求：Java、统招本科、Spring" not in markdown
     assert "技能要求：Java、统招本科、Spring" not in document
+
+
+def test_markdown_and_html_hide_education_when_source_does_not_provide_it(tmp_path):
+    write_wechat_article(sample_data(), PNG, COVER, tmp_path / "wechat")
+    markdown = (tmp_path / "wechat" / "article.md").read_text(encoding="utf-8")
+    document = (tmp_path / "wechat" / "article.html").read_text(encoding="utf-8")
+
+    assert "学历要求：" not in markdown
+    assert "学历要求：" not in document
 
 
 def test_invalid_image_is_rejected(tmp_path):

@@ -169,7 +169,7 @@ def _education_label(value: str) -> str | None:
     return None
 
 
-def _requirement_labels(posting: NewJobPosting) -> tuple[str, str]:
+def _requirement_labels(posting: NewJobPosting) -> tuple[str | None, str]:
     """返回学历要求与移除学历标签后的技能要求。"""
     education: str | None = None
     skills: list[str] = []
@@ -183,7 +183,7 @@ def _requirement_labels(posting: NewJobPosting) -> tuple[str, str]:
                 education = detected
             continue
         skills.append(value)
-    return education or "未注明", "、".join(skills) or "暂无明确技能标签"
+    return education, "、".join(skills) or "暂无明确技能标签"
 
 
 def _new_job_count(data: WechatArticleData) -> int:
@@ -232,12 +232,11 @@ def _build_markdown(data: WechatArticleData) -> str:
                     posting.company,
                     "",
                     f"工作地点：{posting.city}",
-                    "",
-                    f"学历要求：{education_label}",
-                    "",
-                    f"技能要求：{skills_label}",
                 ]
             )
+            if education_label is not None:
+                lines.extend(["", f"学历要求：{education_label}"])
+            lines.extend(["", f"技能要求：{skills_label}"])
             if posting.detail_url:
                 lines.extend(["", f"[查看岗位详情 →]({posting.detail_url})"])
             lines.append("")
@@ -274,6 +273,11 @@ def _build_html(data: WechatArticleData) -> str:
                     f'<a href="{url}" target="_blank" rel="noopener noreferrer">查看岗位详情 →</a>'
                 )
             education_label, skills_label = _requirement_labels(posting)
+            education = (
+                f"<p>学历要求：{html.escape(education_label)}</p>"
+                if education_label is not None
+                else ""
+            )
             cards.append(
                 '<article class="job-card">'
                 '<div class="job-heading">'
@@ -282,7 +286,7 @@ def _build_html(data: WechatArticleData) -> str:
                 "</div>"
                 f'<p class="company">{html.escape(posting.company)}</p>'
                 f"<p>工作地点：{html.escape(posting.city)}</p>"
-                f"<p>学历要求：{html.escape(education_label)}</p>"
+                f"{education}"
                 f"<p>技能要求：{html.escape(skills_label)}</p>"
                 f"{link}</article>"
             )

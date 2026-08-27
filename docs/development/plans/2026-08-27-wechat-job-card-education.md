@@ -14,7 +14,7 @@
 - 识别范围固定为：`学历不限`、`中专`、`高中`、`大专`、`本科`、`硕士`、`博士`。
 - “统招本科”等包含明确学历词的标签规范化为对应学历。
 - 多个学历标签同时存在时，展示原始顺序中的第一个识别结果，并从技能文本移除全部学历标签。
-- 识别不到学历时显示“学历要求：未注明”。
+- 识别不到学历时隐藏学历行。
 - 学历标签移除后没有剩余技能时，显示“暂无明确技能标签”。
 - 不修改抓取规则、数据库、每日快照、`NewJobPosting`、Telegram、文章包文件名、权限或清单结构。
 - 不推测原始数据没有提供的学历。
@@ -38,7 +38,7 @@
 
 **Interfaces:**
 - Consumes: `NewJobPosting.skills: tuple[str, ...]`
-- Produces: `_requirement_labels(posting: NewJobPosting) -> tuple[str, str]`，依次返回学历显示值和技能显示值。
+- Produces: `_requirement_labels(posting: NewJobPosting) -> tuple[str | None, str]`，依次返回可选学历显示值和技能显示值。
 
 - [ ] **Step 1: 在测试文件导入纯函数**
 
@@ -63,15 +63,15 @@ from jobflow.reports.wechat_article import (
     ("skills", "expected"),
     [
         (("Java", "统招本科", "Spring"), ("本科", "Java、Spring")),
-        (("Java", "Spring"), ("未注明", "Java、Spring")),
+        (("Java", "Spring"), (None, "Java、Spring")),
         (("统招本科",), ("本科", "暂无明确技能标签")),
         (("本科", "硕士", "Python"), ("本科", "Python")),
-        (("  ", "Python"), ("未注明", "Python")),
+        (("  ", "Python"), (None, "Python")),
     ],
 )
 def test_requirement_labels_extract_education_and_filter_skills(
     skills: tuple[str, ...],
-    expected: tuple[str, str],
+    expected: tuple[str | None, str],
 ) -> None:
     assert _requirement_labels(posting("requirements", skills=skills)) == expected
 ```
@@ -102,7 +102,7 @@ def _education_label(value: str) -> str | None:
     return None
 
 
-def _requirement_labels(posting: NewJobPosting) -> tuple[str, str]:
+def _requirement_labels(posting: NewJobPosting) -> tuple[str | None, str]:
     """返回学历要求与移除学历标签后的技能要求。"""
     education: str | None = None
     skills: list[str] = []
@@ -116,7 +116,7 @@ def _requirement_labels(posting: NewJobPosting) -> tuple[str, str]:
                 education = detected
             continue
         skills.append(value)
-    return education or "未注明", "、".join(skills) or "暂无明确技能标签"
+    return education, "、".join(skills) or "暂无明确技能标签"
 ```
 
 - [ ] **Step 5: 运行识别测试并确认通过**
@@ -136,8 +136,8 @@ Expected: `5 passed`。
 - Modify: `src/jobflow/reports/wechat_article.py`
 
 **Interfaces:**
-- Consumes: `_requirement_labels(posting: NewJobPosting) -> tuple[str, str]`
-- Produces: 每张 Markdown 和 HTML 岗位卡片各包含一行 `学历要求：<值>`，技能行不再包含学历标签。
+- Consumes: `_requirement_labels(posting: NewJobPosting) -> tuple[str | None, str]`
+- Produces: Markdown 和 HTML 仅在识别到学历时包含 `学历要求：<值>`，技能行不再包含学历标签。
 
 - [ ] **Step 1: 写入失败的双格式渲染测试**
 
@@ -178,7 +178,7 @@ def test_markdown_and_html_render_education_without_repeating_skill_tag(tmp_path
 并在现有 `test_html_has_no_script_remote_resource_or_sensitive_fields` 中补充：
 
 ```python
-assert html.count("学历要求：未注明") == 3
+assert "学历要求：" not in html
 ```
 
 - [ ] **Step 2: 运行两个渲染测试并确认失败**
@@ -205,12 +205,11 @@ for posting in _sorted_postings(group.postings):
             posting.company,
             "",
             f"工作地点：{posting.city}",
-            "",
-            f"学历要求：{education_label}",
-            "",
-            f"技能要求：{skills_label}",
         ]
     )
+    if education_label is not None:
+        lines.extend(["", f"学历要求：{education_label}"])
+    lines.extend(["", f"技能要求：{skills_label}"])
 ```
 
 保留该循环后面的详情链接和空行处理不变。
@@ -221,6 +220,11 @@ for posting in _sorted_postings(group.postings):
 
 ```python
 education_label, skills_label = _requirement_labels(posting)
+education = (
+    f"<p>学历要求：{html.escape(education_label)}</p>"
+    if education_label is not None
+    else ""
+)
 cards.append(
     '<article class="job-card">'
     '<div class="job-heading">'
@@ -229,7 +233,7 @@ cards.append(
     "</div>"
     f'<p class="company">{html.escape(posting.company)}</p>'
     f"<p>工作地点：{html.escape(posting.city)}</p>"
-    f"<p>学历要求：{html.escape(education_label)}</p>"
+    f"{education}"
     f"<p>技能要求：{html.escape(skills_label)}</p>"
     f"{link}</article>"
 )
@@ -391,7 +395,7 @@ grep -n '学历要求：本科' "$REPORT_DIR/article.md" | head
 stat -c '%a %n' "$REPORT_DIR" "$REPORT_DIR"/*
 ```
 
-Expected: 学历行计数合计为 247；如果当天新增岗位包含可识别学历，则显示规范化结果，否则可以全部为“未注明”；目录为 `755`，五个文件均为 `644`。
+Expected: 如果当天新增岗位包含可识别学历，则显示规范化结果；无法识别的岗位不包含学历行。目录为 `755`，五个文件均为 `644`。
 
 - [ ] **Step 5: 人工打开文章并确认公众号排版**
 
