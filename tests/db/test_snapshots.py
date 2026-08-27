@@ -8,6 +8,7 @@ from jobflow.db.snapshots import (
     get_snapshot,
     insert_snapshot,
     list_dated_snapshots,
+    list_new_job_postings,
     list_snapshot_items,
     record_photo_failure,
     record_photo_sending,
@@ -178,7 +179,19 @@ def test_get_snapshot_returns_none_when_natural_date_is_missing() -> None:
 
 def test_list_snapshot_items_maps_skills_to_tuple() -> None:
     connection = ReadConnection(
-        [("boss_zhipin", "job-1", "算法工程师", "示例公司", "上海", 20, 30, "K_PER_MONTH", ["Python", "RAG"])]
+        [
+            (
+                "boss_zhipin",
+                "job-1",
+                "算法工程师",
+                "示例公司",
+                "上海",
+                20,
+                30,
+                "K_PER_MONTH",
+                ["Python", "RAG"],
+            )
+        ]
     )
 
     result = list_snapshot_items(connection, 17)
@@ -190,8 +203,30 @@ def test_list_snapshot_items_maps_skills_to_tuple() -> None:
 def test_list_dated_snapshots_groups_only_dates_returned_by_database() -> None:
     connection = ReadConnection(
         [
-            (date(2026, 8, 17), "boss_zhipin", "a", "岗位 A", "公司", "上海", 20, 30, "K_PER_MONTH", []),
-            (date(2026, 8, 18), "boss_zhipin", "b", "岗位 B", "公司", "北京", 20, 30, "K_PER_MONTH", ["Python"]),
+            (
+                date(2026, 8, 17),
+                "boss_zhipin",
+                "a",
+                "岗位 A",
+                "公司",
+                "上海",
+                20,
+                30,
+                "K_PER_MONTH",
+                [],
+            ),
+            (
+                date(2026, 8, 18),
+                "boss_zhipin",
+                "b",
+                "岗位 B",
+                "公司",
+                "北京",
+                20,
+                30,
+                "K_PER_MONTH",
+                ["Python"],
+            ),
         ]
     )
 
@@ -203,6 +238,66 @@ def test_list_dated_snapshots_groups_only_dates_returned_by_database() -> None:
     )
 
     assert [day.snapshot_date for day in result] == [date(2026, 8, 17), date(2026, 8, 18)]
+
+
+def test_list_new_job_postings_uses_identity_diff_and_core_detail_url() -> None:
+    connection = ReadConnection(
+        [
+            (
+                "boss_zhipin",
+                "job-2",
+                "AI Agent 工程师",
+                "示例公司",
+                "上海",
+                "20-35K·14薪",
+                20,
+                35,
+                "K_PER_MONTH",
+                14,
+                ["Python", "LLM"],
+                "https://example.test/jobs/2",
+            )
+        ]
+    )
+
+    result = list_new_job_postings(
+        connection,
+        current_snapshot_id=20,
+        previous_snapshot_id=19,
+        keyword="AI Agent",
+    )
+
+    sql, params = connection.cursor_instance.executed[0]
+    normalized = " ".join(sql.split())
+    assert "LEFT JOIN core.job_snapshot_items AS previous" in normalized
+    assert "LEFT JOIN core.jobs AS jobs" in normalized
+    assert "previous.source IS NULL" in normalized
+    assert params == (19, 20, "AI Agent")
+    assert result[0].identity == ("boss_zhipin", "job-2")
+    assert result[0].detail_url == "https://example.test/jobs/2"
+    assert result[0].skills == ("Python", "LLM")
+
+
+@pytest.mark.parametrize(
+    ("current_snapshot_id", "previous_snapshot_id", "keyword"),
+    [(0, 19, "AI Agent"), (20, 20, "AI Agent"), (20, 19, "  ")],
+)
+def test_list_new_job_postings_rejects_invalid_identity_inputs(
+    current_snapshot_id: int,
+    previous_snapshot_id: int,
+    keyword: str,
+) -> None:
+    connection = ReadConnection([])
+
+    with pytest.raises(ValueError):
+        list_new_job_postings(
+            connection,
+            current_snapshot_id=current_snapshot_id,
+            previous_snapshot_id=previous_snapshot_id,
+            keyword=keyword,
+        )
+
+    assert connection.cursor_instance.executed == []
 
 
 def test_get_delivery_maps_nullable_message_ids() -> None:

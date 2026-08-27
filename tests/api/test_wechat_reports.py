@@ -6,6 +6,8 @@ from fastapi.testclient import TestClient
 from jobflow.api.analytics import get_connection
 from jobflow.api.app import create_app
 from jobflow.api.reports import (
+    get_wechat_article_generator,
+    get_wechat_article_status_reader,
     get_wechat_daily_report_sender,
     get_wechat_daily_status_reader,
 )
@@ -20,6 +22,28 @@ def wechat_client(monkeypatch, *, sender=None, reader=None, connection=None):
     if reader is not None:
         app.dependency_overrides[get_wechat_daily_status_reader] = lambda: reader
     return TestClient(app), app
+
+
+def wechat_article_client(
+    monkeypatch,
+    *,
+    generator=None,
+    reader=None,
+    connection_provider=None,
+):
+    monkeypatch.setenv("REPORT_TRIGGER_TOKEN", "test-trigger-token")
+    app = create_app()
+    provider = connection_provider or Mock(return_value=Mock())
+
+    def provide_connection():
+        return provider()
+
+    app.dependency_overrides[get_connection] = provide_connection
+    if generator is not None:
+        app.dependency_overrides[get_wechat_article_generator] = lambda: generator
+    if reader is not None:
+        app.dependency_overrides[get_wechat_article_status_reader] = lambda: reader
+    return TestClient(app), app, provider
 
 
 def test_wechat_send_requires_token_before_service(monkeypatch):
@@ -96,3 +120,92 @@ def test_wechat_resend_requires_and_forwards_confirmation(monkeypatch):
     sender.assert_called_once_with(
         connection, snapshot_date=date(2026, 8, 27), allow_uncertain=True
     )
+
+
+def test_wechat_article_generate_requires_token_before_db_access(monkeypatch):
+    generator = Mock()
+    client, app, connection_provider = wechat_article_client(
+        monkeypatch,
+        generator=generator,
+    )
+    try:
+        response = client.post(
+            "/reports/daily/multi/wechat/article/generate?snapshot_date=2026-08-27"
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 401
+    connection_provider.assert_not_called()
+    generator.assert_not_called()
+
+
+def test_wechat_article_generate_returns_safe_result(monkeypatch):
+    generator = Mock(
+        return_value={
+            "status": "generated",
+            "snapshot_date": "2026-08-27",
+            "new_job_count": 12,
+            "baseline_ready": True,
+        }
+    )
+    client, app, connection_provider = wechat_article_client(
+        monkeypatch,
+        generator=generator,
+    )
+    try:
+        response = client.post(
+            "/reports/daily/multi/wechat/article/generate?snapshot_date=2026-08-27",
+            headers={"Authorization": "Bearer test-trigger-token"},
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert response.json()["new_job_count"] == 12
+    generator.assert_called_once_with(
+        connection_provider.return_value,
+        snapshot_date=date(2026, 8, 27),
+    )
+
+
+def test_wechat_article_status_does_not_open_database(monkeypatch):
+    reader = Mock(return_value={"status": "pending", "snapshot_date": "2026-08-27"})
+    client, app, connection_provider = wechat_article_client(
+        monkeypatch,
+        reader=reader,
+    )
+    try:
+        response = client.get(
+            "/reports/daily/multi/wechat/article/status?snapshot_date=2026-08-27",
+            headers={"Authorization": "Bearer test-trigger-token"},
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    connection_provider.assert_not_called()
+    reader.assert_called_once_with(snapshot_date=date(2026, 8, 27))
+
+
+def test_wechat_article_generate_hides_domain_and_filesystem_errors(monkeypatch):
+    for failure, expected_status in (
+        (ValueError("secret keyword and SQL"), 409),
+        (OSError("private server path"), 503),
+    ):
+        generator = Mock(side_effect=failure)
+        client, app, _provider = wechat_article_client(
+            monkeypatch,
+            generator=generator,
+        )
+        try:
+            response = client.post(
+                "/reports/daily/multi/wechat/article/generate?snapshot_date=2026-08-27",
+                headers={"Authorization": "Bearer test-trigger-token"},
+            )
+        finally:
+            app.dependency_overrides.clear()
+
+        assert response.status_code == expected_status
+        assert "secret" not in response.text.lower()
+        assert "private" not in response.text.lower()
