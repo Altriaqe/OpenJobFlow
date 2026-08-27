@@ -2,6 +2,8 @@
 
 from collections.abc import Callable
 from datetime import date
+import hashlib
+import json
 import os
 from pathlib import Path
 
@@ -20,12 +22,20 @@ from jobflow.db.report_deliveries import (
     record_delivery_result,
 )
 from jobflow.reports.multi_keyword_service import build_multi_keyword_wechat_parts
+from jobflow.reports.charts import build_daily_new_jobs_cover_png
 from jobflow.reports.wechat_article import WechatArticleData, write_wechat_article
 from jobflow.reports.wechat_template import build_wechat_template_data
 
 
 REPORT_KEY = "multi_keyword_daily"
 CHANNEL = "wechat_test_template"
+ARTICLE_FILES = (
+    "article.md",
+    "article.html",
+    "cover.png",
+    "trend.png",
+    "manifest.json",
+)
 
 
 def _enabled() -> bool:
@@ -83,7 +93,12 @@ def send_wechat_daily_report(
     allow_uncertain: bool = False,
 ) -> dict[str, object]:
     """生成文章包并发送模板摘要；投递状态与 Telegram 完全独立。"""
-    write_wechat_article(article_data, trend_png, output_dir)
+    write_wechat_article(
+        article_data,
+        trend_png,
+        build_daily_new_jobs_cover_png(),
+        output_dir,
+    )
     claim_delivery(
         connection,
         report_date=article_data.report_date,
@@ -131,3 +146,86 @@ def send_wechat_daily_report(
     )
     connection.commit()
     return {"status": "sent", "message_id": receipt.message_id}
+
+
+def generate_wechat_article_from_snapshots(
+    connection,
+    *,
+    snapshot_date: date,
+    runtime_root: Path = Path("runtime"),
+) -> dict[str, object]:
+    """从真实快照生成本地文章包，不读取微信凭据也不触发网络。"""
+    article_data, trend_png = build_multi_keyword_wechat_parts(
+        connection,
+        snapshot_date=snapshot_date,
+    )
+    output_dir = runtime_root / "reports" / snapshot_date.isoformat() / "wechat"
+    manifest = write_wechat_article(
+        article_data,
+        trend_png,
+        build_daily_new_jobs_cover_png(),
+        output_dir,
+    )
+    return {
+        "status": "generated",
+        "snapshot_date": snapshot_date.isoformat(),
+        "new_job_count": manifest.new_job_count,
+        "baseline_ready": all(count is not None for _keyword, count in manifest.keyword_counts),
+    }
+
+
+def get_wechat_article_status(
+    *,
+    snapshot_date: date,
+    runtime_root: Path = Path("runtime"),
+) -> dict[str, object]:
+    """读取文章包清单并只暴露审核所需的安全状态。"""
+    pending = {"status": "pending", "snapshot_date": snapshot_date.isoformat()}
+    output_dir = runtime_root / "reports" / snapshot_date.isoformat() / "wechat"
+    manifest_path = output_dir / "manifest.json"
+    try:
+        payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        return pending
+    if payload.get("report_date") != snapshot_date.isoformat():
+        return pending
+    if tuple(payload.get("files", ())) != ARTICLE_FILES:
+        return pending
+    if not all((output_dir / filename).is_file() for filename in ARTICLE_FILES):
+        return pending
+    new_job_count = payload.get("new_job_count")
+    keyword_counts = payload.get("keyword_counts")
+    if not isinstance(new_job_count, int) or new_job_count < 0:
+        return pending
+    if not isinstance(keyword_counts, list) or not keyword_counts:
+        return pending
+    parsed_counts: list[int | None] = []
+    for item in keyword_counts:
+        if (
+            not isinstance(item, list)
+            or len(item) != 2
+            or not isinstance(item[0], str)
+            or not item[0].strip()
+            or (item[1] is not None and (not isinstance(item[1], int) or item[1] < 0))
+        ):
+            return pending
+        parsed_counts.append(item[1])
+    if sum(count or 0 for count in parsed_counts) != new_job_count:
+        return pending
+    cover_digest = payload.get("cover_sha256")
+    trend_digest = payload.get("trend_sha256")
+    if not isinstance(cover_digest, str) or not isinstance(trend_digest, str):
+        return pending
+    try:
+        actual_cover = hashlib.sha256((output_dir / "cover.png").read_bytes()).hexdigest()
+        actual_trend = hashlib.sha256((output_dir / "trend.png").read_bytes()).hexdigest()
+    except OSError:
+        return pending
+    if actual_cover != cover_digest or actual_trend != trend_digest:
+        return pending
+    return {
+        "status": "generated",
+        "snapshot_date": snapshot_date.isoformat(),
+        "new_job_count": new_job_count,
+        "baseline_ready": all(count is not None for count in parsed_counts),
+    }

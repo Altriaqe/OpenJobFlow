@@ -5,6 +5,7 @@ from datetime import date
 from jobflow.models.job import JobRecord
 from jobflow.models.snapshot import (
     DatedSnapshot,
+    NewJobPosting,
     ReportDelivery,
     SnapshotHeader,
     SnapshotItem,
@@ -191,6 +192,76 @@ def list_dated_snapshots(
     return tuple(
         DatedSnapshot(snapshot_date=snapshot_date, items=tuple(items))
         for snapshot_date, items in grouped.items()
+    )
+
+
+def list_new_job_postings(
+    connection,
+    *,
+    current_snapshot_id: int,
+    previous_snapshot_id: int,
+    keyword: str,
+) -> tuple[NewJobPosting, ...]:
+    """返回当前快照中首次出现的岗位，并尽可能补充原平台详情链接。"""
+    if current_snapshot_id <= 0 or previous_snapshot_id <= 0:
+        raise ValueError("snapshot ids must be positive")
+    if current_snapshot_id == previous_snapshot_id:
+        raise ValueError("snapshot ids must be distinct")
+    normalized_keyword = keyword.strip()
+    if not normalized_keyword:
+        raise ValueError("keyword must not be empty")
+
+    cursor = connection.cursor()
+    cursor.execute(
+        """
+        SELECT
+            current.source,
+            current.external_id,
+            current.title,
+            current.company,
+            current.city,
+            current.salary_text,
+            current.salary_min,
+            current.salary_max,
+            current.salary_unit,
+            current.salary_months,
+            current.skills,
+            jobs.detail_url
+        FROM core.job_snapshot_items AS current
+        LEFT JOIN core.job_snapshot_items AS previous
+          ON previous.snapshot_id = %s
+         AND previous.source = current.source
+         AND previous.external_id = current.external_id
+        LEFT JOIN core.jobs AS jobs
+          ON jobs.source = current.source
+         AND jobs.external_id = current.external_id
+        JOIN core.job_snapshots AS snapshot
+          ON snapshot.id = current.snapshot_id
+        WHERE current.snapshot_id = %s
+          AND snapshot.search_keyword = %s
+          AND snapshot.status = 'succeeded'
+          AND previous.source IS NULL
+        ORDER BY current.city, current.title, current.external_id, current.source
+        """,
+        (previous_snapshot_id, current_snapshot_id, normalized_keyword),
+    )
+    return tuple(
+        NewJobPosting(
+            source=row[0],
+            external_id=row[1],
+            keyword=normalized_keyword,
+            title=row[2],
+            company=row[3],
+            city=row[4],
+            salary_text=row[5],
+            salary_min=row[6],
+            salary_max=row[7],
+            salary_unit=row[8],
+            salary_months=row[9],
+            skills=tuple(row[10] or ()),
+            detail_url=row[11],
+        )
+        for row in cursor.fetchall()
     )
 
 

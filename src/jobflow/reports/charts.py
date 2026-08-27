@@ -190,3 +190,36 @@ def build_baseline_pending_png() -> bytes:
             return output.getvalue()
         finally:
             plt.close(fig)
+
+
+def build_daily_new_jobs_cover_png() -> bytes:
+    """生成固定 900×383 的公众号文章横向封面。"""
+    with matplotlib.rc_context({"font.family": _select_font_family(), "axes.unicode_minus": False}):
+        fig = plt.figure(figsize=(6, 383 / 150), dpi=150, facecolor="#1738C8")
+        try:
+            ax = fig.add_axes((0, 0, 1, 1))
+            ax.set_facecolor("#1738C8")
+            ax.axis("off")
+            ax.text(
+                0.08,
+                0.82,
+                "OPENJOBFLOW",
+                color="#DCE6FF",
+                fontsize=10,
+                fontweight="bold",
+            )
+            ax.text(
+                0.5,
+                0.48,
+                "今日新增岗位",
+                ha="center",
+                va="center",
+                color="white",
+                fontsize=28,
+                fontweight="bold",
+            )
+            output = BytesIO()
+            fig.savefig(output, format="png", dpi=150, bbox_inches=None, pad_inches=0)
+            return output.getvalue()
+        finally:
+            plt.close(fig)

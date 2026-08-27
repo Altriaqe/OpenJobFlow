@@ -70,6 +70,30 @@ class SnapshotItem:
 
 
 @dataclass(frozen=True)
+class NewJobPosting:
+    """微信公众号公告使用的新增岗位摘要。"""
+
+    source: str
+    external_id: str
+    keyword: str
+    title: str
+    company: str
+    city: str
+    salary_text: str | None
+    salary_min: int | None
+    salary_max: int | None
+    salary_unit: str | None
+    salary_months: int | None
+    skills: tuple[str, ...]
+    detail_url: str | None
+
+    @property
+    def identity(self) -> tuple[str, str]:
+        """返回用于跨日比较的岗位身份。"""
+        return self.source, self.external_id
+
+
+@dataclass(frozen=True)
 class MetricChange:
     """一个指标的本期值、基准值和变化。"""
 

@@ -13,6 +13,7 @@ from jobflow.models.snapshot import (
     DailyComparison,
     MetricChange,
     NamedCount,
+    NewJobPosting,
     ReportDelivery,
     SnapshotHeader,
 )
@@ -58,6 +59,24 @@ def delivery(
         text_attempts=0,
         photo_attempts=0,
         last_error_type=last_error_type,
+    )
+
+
+def posting(keyword: str, external_id: str) -> NewJobPosting:
+    return NewJobPosting(
+        source="boss_zhipin",
+        external_id=external_id,
+        keyword=keyword,
+        title=f"{keyword} 工程师",
+        company="示例公司",
+        city="上海",
+        salary_text="20-30K",
+        salary_min=20,
+        salary_max=30,
+        salary_unit="K_PER_MONTH",
+        salary_months=None,
+        skills=("Python",),
+        detail_url=f"https://example.test/jobs/{external_id}",
     )
 
 
@@ -125,9 +144,7 @@ def arrange(
     )
     if locked_statuses is None:
         locked_statuses = (
-            ("pending", "text_sent")
-            if delivery_status == "pending"
-            else (delivery_status,)
+            ("pending", "text_sent") if delivery_status == "pending" else (delivery_status,)
         )
     locked_queue = list(locked_statuses)
 
@@ -155,6 +172,11 @@ def arrange(
         Mock(side_effect=get_deliveries_for_update),
     )
     monkeypatch.setattr(multi_keyword_service, "list_snapshot_items", Mock(return_value=()))
+    monkeypatch.setattr(
+        multi_keyword_service,
+        "list_new_job_postings",
+        Mock(return_value=()),
+    )
     monkeypatch.setattr(
         multi_keyword_service,
         "compare_daily",
@@ -196,6 +218,51 @@ def arrange(
     ):
         monkeypatch.setattr(multi_keyword_service, name, Mock())
     return Mock()
+
+
+def test_wechat_parts_include_all_new_jobs_in_keyword_order(monkeypatch) -> None:
+    connection = arrange(monkeypatch)
+
+    def new_jobs(_connection, *, current_snapshot_id, previous_snapshot_id, keyword):
+        assert current_snapshot_id != previous_snapshot_id
+        return (posting(keyword, f"job-{current_snapshot_id}"),)
+
+    multi_keyword_service.list_new_job_postings.side_effect = new_jobs
+
+    data, _image = multi_keyword_service.build_multi_keyword_wechat_parts(
+        connection,
+        snapshot_date=REPORT_DATE,
+        keywords=KEYWORDS,
+    )
+
+    assert tuple(group.keyword for group in data.new_job_groups) == KEYWORDS
+    assert tuple(group.postings[0].keyword for group in data.new_job_groups) == KEYWORDS
+    assert multi_keyword_service.list_new_job_postings.call_count == 4
+
+
+def test_wechat_parts_distinguish_missing_baseline_from_empty_diff(monkeypatch) -> None:
+    connection = arrange(monkeypatch, with_baseline=False)
+
+    data, _image = multi_keyword_service.build_multi_keyword_wechat_parts(
+        connection,
+        snapshot_date=REPORT_DATE,
+        keywords=KEYWORDS,
+    )
+
+    assert all(group.postings is None for group in data.new_job_groups)
+    multi_keyword_service.list_new_job_postings.assert_not_called()
+
+
+def test_wechat_parts_keep_empty_tuple_when_baseline_has_no_new_jobs(monkeypatch) -> None:
+    connection = arrange(monkeypatch)
+
+    data, _image = multi_keyword_service.build_multi_keyword_wechat_parts(
+        connection,
+        snapshot_date=REPORT_DATE,
+        keywords=KEYWORDS,
+    )
+
+    assert all(group.postings == () for group in data.new_job_groups)
 
 
 def test_status_lists_only_missing_keywords(monkeypatch) -> None:

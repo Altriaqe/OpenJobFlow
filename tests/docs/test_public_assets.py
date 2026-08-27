@@ -302,6 +302,19 @@ def test_documentation_is_grouped_by_reader_goal() -> None:
     assert not (DOCS_ROOT / "superpowers").exists()
 
 
+def test_current_development_index_links_v1_3_3_design_and_plan() -> None:
+    design = (
+        DEVELOPMENT_ROOT / "specs" / "2026-08-27-v1-3-3-wechat-daily-new-jobs-article-design.md"
+    )
+    plan = DEVELOPMENT_ROOT / "plans" / "2026-08-27-v1-3-3-wechat-daily-new-jobs-article.md"
+    index = (DEVELOPMENT_ROOT / "README.md").read_text(encoding="utf-8")
+
+    assert design.is_file()
+    assert plan.is_file()
+    assert "specs/2026-08-27-v1-3-3-wechat-daily-new-jobs-article-design.md" in index
+    assert "plans/2026-08-27-v1-3-3-wechat-daily-new-jobs-article.md" in index
+
+
 def test_tracked_public_text_does_not_expose_personal_environment() -> None:
     violations: list[str] = []
     patterns = {

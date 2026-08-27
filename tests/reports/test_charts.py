@@ -14,8 +14,13 @@ from jobflow.reports.charts import (
     _keyword_city_matrix,
     build_baseline_pending_png,
     build_city_share_png,
+    build_daily_new_jobs_cover_png,
     build_keyword_city_heatmap_png,
 )
+
+
+def png_dimensions(image: bytes) -> tuple[int, int]:
+    return int.from_bytes(image[16:20], "big"), int.from_bytes(image[20:24], "big")
 
 
 def city_metrics(values: tuple[int, ...] = (82, 76, 63, 65)) -> tuple[NamedMetric, ...]:
@@ -139,3 +144,10 @@ def test_build_baseline_pending_png_returns_valid_png() -> None:
 
     assert image.startswith(b"\x89PNG\r\n\x1a\n")
     assert len(image) > 10_000
+
+
+def test_daily_new_jobs_cover_is_landscape_png() -> None:
+    image = build_daily_new_jobs_cover_png()
+
+    assert image.startswith(b"\x89PNG\r\n\x1a\n")
+    assert png_dimensions(image) == (900, 383)

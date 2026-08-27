@@ -9,8 +9,21 @@ import os
 from pathlib import Path
 import shutil
 import tempfile
+from urllib.parse import urlparse
 
-from jobflow.models.snapshot import KeywordTrend
+from jobflow.models.snapshot import KeywordTrend, NewJobPosting
+
+
+@dataclass(frozen=True)
+class KeywordNewJobs:
+    """一个关键词的新增岗位；None 表示缺少可比较的前日基线。"""
+
+    keyword: str
+    postings: tuple[NewJobPosting, ...] | None
+
+    @property
+    def has_baseline(self) -> bool:
+        return self.postings is not None
 
 
 @dataclass(frozen=True)
@@ -23,6 +36,7 @@ class WechatArticleData:
     keyword_rows: tuple[tuple[str, int, int | None], ...]
     city_advantages: tuple[tuple[str, str, int], ...]
     weekly_summary: str | None = None
+    new_job_groups: tuple[KeywordNewJobs, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -31,6 +45,9 @@ class ArticleManifest:
 
     report_date: str
     files: tuple[str, ...]
+    new_job_count: int
+    keyword_counts: tuple[tuple[str, int | None], ...]
+    cover_sha256: str
     trend_sha256: str
 
 
@@ -40,6 +57,7 @@ def build_article_data(
     trends: tuple[KeywordTrend, ...],
     city_count: int,
     pages_per_city: int,
+    new_job_groups: tuple[KeywordNewJobs, ...] = (),
 ) -> WechatArticleData:
     """把统一多关键词趋势转换为文章输入，避免微信渠道重复计算指标。"""
     if not trends:
@@ -79,29 +97,84 @@ def build_article_data(
         keyword_rows=keyword_rows,
         city_advantages=tuple(city_advantages),
         weekly_summary=weekly_summary,
+        new_job_groups=new_job_groups,
     )
 
 
-def _validate(data: WechatArticleData, trend_png: bytes) -> None:
+def _validate(data: WechatArticleData, trend_png: bytes, cover_png: bytes) -> None:
     if data.city_count <= 0 or data.pages_per_city <= 0:
         raise ValueError("article scope must be positive")
     if not data.keyword_rows:
         raise ValueError("article requires keyword rows")
     if not trend_png.startswith(b"\x89PNG\r\n\x1a\n"):
         raise ValueError("trend image must be a PNG")
+    if not cover_png.startswith(b"\x89PNG\r\n\x1a\n"):
+        raise ValueError("cover image must be a PNG")
     keywords = [row[0].strip() for row in data.keyword_rows]
     if any(not keyword for keyword in keywords) or len(set(keywords)) != len(keywords):
         raise ValueError("keywords must be non-empty and unique")
     for keyword, total, new_count in data.keyword_rows:
         if total < 0 or (new_count is not None and new_count < 0):
             raise ValueError(f"invalid metric for keyword: {keyword}")
+    group_keywords = [group.keyword.strip() for group in data.new_job_groups]
+    if any(not keyword for keyword in group_keywords) or len(set(group_keywords)) != len(
+        group_keywords
+    ):
+        raise ValueError("new-job keywords must be non-empty and unique")
+    if group_keywords and group_keywords != keywords:
+        raise ValueError("new-job groups must match keyword report order")
+    for group in data.new_job_groups:
+        if group.postings is None:
+            continue
+        identities: set[tuple[str, str]] = set()
+        for posting in group.postings:
+            if posting.keyword != group.keyword:
+                raise ValueError("posting keyword does not match its group")
+            if posting.identity in identities:
+                raise ValueError("job identities must be unique within a keyword")
+            identities.add(posting.identity)
+            if not posting.title.strip() or not posting.company.strip() or not posting.city.strip():
+                raise ValueError("job title, company and city must not be empty")
+            if posting.detail_url:
+                parsed = urlparse(posting.detail_url)
+                if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+                    raise ValueError("detail URL must use http or https")
+
+
+def _sorted_postings(postings: tuple[NewJobPosting, ...]) -> tuple[NewJobPosting, ...]:
+    return tuple(
+        sorted(
+            postings,
+            key=lambda item: (item.city, item.title, item.external_id, item.source),
+        )
+    )
+
+
+def _salary_label(posting: NewJobPosting) -> str:
+    return (
+        posting.salary_text.strip()
+        if posting.salary_text and posting.salary_text.strip()
+        else "薪资面议"
+    )
+
+
+def _skills_label(posting: NewJobPosting) -> str:
+    values = tuple(skill.strip() for skill in posting.skills if skill.strip())
+    return "、".join(values) if values else "暂无明确技能标签"
+
+
+def _new_job_count(data: WechatArticleData) -> int:
+    return sum(len(group.postings) for group in data.new_job_groups if group.postings is not None)
 
 
 def _build_markdown(data: WechatArticleData) -> str:
     lines = [
-        f"# JobFlow 招聘数据日报｜{data.report_date.isoformat()}",
+        f"# {data.report_date.isoformat()} 每日新增岗位公告",
         "",
-        f"> 固定范围样本：{data.city_count} 个城市，每城 {data.pages_per_city} 页；仅供学习研究，不代表全市场总量。",
+        f"> 今日新增岗位样本：{_new_job_count(data)}",
+        f"> 搜索关键词：{len(data.keyword_rows)}",
+        f"> 覆盖城市：{data.city_count}",
+        f"> 采集口径：每关键词 × 每城市固定 {data.pages_per_city} 页",
         "",
         "## 关键词趋势",
         "",
@@ -117,11 +190,36 @@ def _build_markdown(data: WechatArticleData) -> str:
     lines.extend(["", "## 趋势图", "", "![多关键词城市趋势](trend.png)"])
     if data.weekly_summary:
         lines.extend(["", "## 周对比", "", data.weekly_summary])
+    lines.extend(["", "## 今日新增岗位", ""])
+    if data.new_job_groups and all(
+        group.postings is not None and not group.postings for group in data.new_job_groups
+    ):
+        lines.extend(["今日暂无新增岗位。", ""])
+    for group in data.new_job_groups:
+        if group.postings is None:
+            lines.extend([f"### {group.keyword} · 基线建立中", ""])
+            continue
+        lines.extend([f"### {group.keyword} · 新增 {len(group.postings)} 个", ""])
+        for posting in _sorted_postings(group.postings):
+            lines.extend(
+                [
+                    f"#### {posting.title}　{_salary_label(posting)}",
+                    "",
+                    posting.company,
+                    "",
+                    f"工作地点：{posting.city}",
+                    "",
+                    f"技能要求：{_skills_label(posting)}",
+                ]
+            )
+            if posting.detail_url:
+                lines.extend(["", f"[查看岗位详情 →]({posting.detail_url})"])
+            lines.append("")
     lines.extend(["", "数据来源：固定页数招聘岗位样本，仅供学习研究。", ""])
     return "\n".join(lines)
 
 
-def _build_html(markdown: str, data: WechatArticleData) -> str:
+def _build_html(data: WechatArticleData) -> str:
     """生成无脚本、无远程资源的静态 HTML，便于复制到公众号编辑器。"""
     rows = "".join(
         "<tr>"
@@ -130,13 +228,54 @@ def _build_html(markdown: str, data: WechatArticleData) -> str:
         "</tr>"
         for keyword, total, new_count in data.keyword_rows
     )
-    title = html.escape(f"JobFlow 招聘数据日报｜{data.report_date.isoformat()}")
+    title = html.escape(f"{data.report_date.isoformat()} 每日新增岗位公告")
+    groups: list[str] = []
+    if data.new_job_groups and all(
+        group.postings is not None and not group.postings for group in data.new_job_groups
+    ):
+        groups.append('<p class="empty">今日暂无新增岗位。</p>')
+    for group in data.new_job_groups:
+        keyword = html.escape(group.keyword, quote=True)
+        if group.postings is None:
+            groups.append(f"<section><h3>{keyword} · 基线建立中</h3></section>")
+            continue
+        cards = []
+        for posting in _sorted_postings(group.postings):
+            link = ""
+            if posting.detail_url:
+                url = html.escape(posting.detail_url, quote=True)
+                link = (
+                    f'<a href="{url}" target="_blank" rel="noopener noreferrer">查看岗位详情 →</a>'
+                )
+            cards.append(
+                '<article class="job-card">'
+                '<div class="job-heading">'
+                f"<h4>{html.escape(posting.title)}</h4>"
+                f'<span class="salary">{html.escape(_salary_label(posting))}</span>'
+                "</div>"
+                f'<p class="company">{html.escape(posting.company)}</p>'
+                f"<p>工作地点：{html.escape(posting.city)}</p>"
+                f"<p>技能要求：{html.escape(_skills_label(posting))}</p>"
+                f"{link}</article>"
+            )
+        groups.append(
+            f"<section><h3>{keyword} · 新增 {len(group.postings)} 个</h3>"
+            + "".join(cards)
+            + "</section>"
+        )
     return (
         '<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">'
-        f"<title>{title}</title></head><body>"
+        f"<title>{title}</title><style>body{{max-width:760px;margin:auto;padding:24px;"
+        "font-family:Arial,'Microsoft YaHei',sans-serif;color:#182230;line-height:1.7}}"
+        ".summary{background:#eef4ff;padding:16px;border-radius:12px}.job-card{border:1px solid "
+        "#dbe4f0;border-radius:14px;padding:18px;margin:14px 0}.job-heading{display:flex;gap:16px;"
+        "justify-content:space-between;align-items:flex-start}.job-heading h4{margin:0}.salary{color:#e05a2a;"
+        "font-weight:700;white-space:nowrap}.company{font-weight:600}a{color:#1738c8;text-decoration:none}"
+        ".empty{padding:24px;text-align:center;background:#f5f7fa;border-radius:12px}</style></head><body>"
         f"<h1>{title}</h1>"
-        f"<p>固定范围样本：{data.city_count} 个城市，每城 {data.pages_per_city} 页；"
-        "仅供学习研究，不代表全市场总量。</p>"
+        f'<div class="summary"><p>今日新增岗位样本：{_new_job_count(data)}<br>'
+        f"搜索关键词：{len(data.keyword_rows)}<br>覆盖城市：{data.city_count}<br>"
+        f"采集口径：每关键词 × 每城市固定 {data.pages_per_city} 页</p></div>"
         "<h2>关键词趋势</h2><table><thead><tr><th>关键词</th>"
         "<th>当前样本</th><th>较前日新增</th></tr></thead>"
         f"<tbody>{rows}</tbody></table>"
@@ -152,6 +291,8 @@ def _build_html(markdown: str, data: WechatArticleData) -> str:
             if data.weekly_summary
             else ""
         )
+        + "<h2>今日新增岗位</h2>"
+        + "".join(groups)
         + "<p>数据来源：固定页数招聘岗位样本，仅供学习研究。</p></body></html>"
     )
 
@@ -159,32 +300,45 @@ def _build_html(markdown: str, data: WechatArticleData) -> str:
 def write_wechat_article(
     data: WechatArticleData,
     trend_png: bytes,
+    cover_png: bytes,
     output_dir: Path,
 ) -> ArticleManifest:
-    """原子写出四件套文章包，并返回不含敏感信息的清单。"""
-    _validate(data, trend_png)
+    """原子写出五件套文章包，并返回不含敏感信息的清单。"""
+    _validate(data, trend_png, cover_png)
     output_dir = Path(output_dir)
     output_dir.parent.mkdir(parents=True, exist_ok=True)
     markdown = _build_markdown(data)
-    document = _build_html(markdown, data)
-    digest = hashlib.sha256(trend_png).hexdigest()
+    document = _build_html(data)
+    trend_digest = hashlib.sha256(trend_png).hexdigest()
+    cover_digest = hashlib.sha256(cover_png).hexdigest()
+    keyword_counts = tuple(
+        (group.keyword, None if group.postings is None else len(group.postings))
+        for group in data.new_job_groups
+    )
     manifest = ArticleManifest(
         report_date=data.report_date.isoformat(),
-        files=("article.md", "article.html", "trend.png", "manifest.json"),
-        trend_sha256=digest,
+        files=("article.md", "article.html", "cover.png", "trend.png", "manifest.json"),
+        new_job_count=_new_job_count(data),
+        keyword_counts=keyword_counts,
+        cover_sha256=cover_digest,
+        trend_sha256=trend_digest,
     )
     temp_dir = Path(tempfile.mkdtemp(prefix="wechat-article-", dir=output_dir.parent))
     backup_dir: Path | None = None
     try:
         (temp_dir / "article.md").write_text(markdown, encoding="utf-8")
         (temp_dir / "article.html").write_text(document, encoding="utf-8")
+        (temp_dir / "cover.png").write_bytes(cover_png)
         (temp_dir / "trend.png").write_bytes(trend_png)
         (temp_dir / "manifest.json").write_text(
             json.dumps(
                 {
                     "report_date": manifest.report_date,
                     "files": manifest.files,
-                    "trend_sha256": digest,
+                    "new_job_count": manifest.new_job_count,
+                    "keyword_counts": manifest.keyword_counts,
+                    "cover_sha256": cover_digest,
+                    "trend_sha256": trend_digest,
                 },
                 ensure_ascii=False,
                 indent=2,

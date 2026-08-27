@@ -97,9 +97,9 @@ PY
 find "runtime/reports/$(date +%F)/wechat" -maxdepth 1 -type f -printf '%f\n' | sort
 ```
 
-预期包含：`article.md`、`article.html`、`manifest.json`、`trend.png`。
+预期包含：`article.md`、`article.html`、`cover.png`、`manifest.json`、`trend.png`。
 
-新生成的 `wechat` 目录权限应为 `0755`，四个文件权限应为 `0644`。宿主机普通用户应能直接执行上述 `find` 命令，不需要 `sudo`；历史文章包需要重新生成后才会获得新权限。
+新生成的 `wechat` 目录权限应为 `0755`，五个文件权限应为 `0644`。宿主机普通用户应能直接执行上述 `find` 命令，不需要 `sudo`；历史文章包需要重新生成后才会获得新权限。
 
 ## 状态和恢复
 
@@ -126,4 +126,27 @@ bash -n ops/daily_update.sh
 ./ops/daily_update.sh
 ```
 
-日志应显示 Telegram 和微信并行尝试，并分别输出状态。`WECHAT_ENABLED=false` 时微信安全跳过，不影响 Telegram。
+V1.3.3 起，日志应显示 Telegram 自动发送和微信公告文章包生成两个并行分支。正式每日任务不再自动调用微信测试号 `/send`；测试号接口只用于手动回归。
+
+## V1.3.3 正式公众号人工发布
+
+V1.3.3 自动生成完整公告，但不调用公众号草稿或发布 API。生成接口为：
+
+```text
+POST /reports/daily/multi/wechat/article/generate?snapshot_date=<YYYY-MM-DD>
+GET  /reports/daily/multi/wechat/article/status?snapshot_date=<YYYY-MM-DD>
+```
+
+人工发布流程：
+
+```text
+检查 runtime/reports/<日期>/wechat/ 五件套
+→ 打开 article.html
+→ 核对 manifest.json 中总数与分关键词数量
+→ 上传 cover.png
+→ 标题填写“今日新增岗位”
+→ 复制正文并人工发布
+→ 手机确认图文卡片和岗位详情链接
+```
+
+测试号模板消息和正式公众号图文卡片不是同一种消息。只有用户在正式公众号后台完成发布并在手机端确认卡片、正文和详情链接后，才能记录为 V1.3.3 正式发布验收完成。

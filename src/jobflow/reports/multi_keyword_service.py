@@ -14,6 +14,7 @@ from jobflow.db.snapshots import (
     get_delivery,
     get_deliveries_for_update,
     get_snapshot,
+    list_new_job_postings,
     list_snapshot_items,
     record_photo_failed,
     record_photo_sending,
@@ -33,7 +34,11 @@ from jobflow.reports.charts import (
 from jobflow.reports.comparison import compare_daily, count_new_jobs_by_city
 from jobflow.reports.daily_brief import build_multi_keyword_brief
 from jobflow.reports.daily_service import load_weekly_comparison_if_sunday
-from jobflow.reports.wechat_article import WechatArticleData, build_article_data
+from jobflow.reports.wechat_article import (
+    KeywordNewJobs,
+    WechatArticleData,
+    build_article_data,
+)
 
 DAILY_KEYWORDS = ("AI Agent", "Python开发", "Java开发", "数据分析")
 
@@ -265,6 +270,33 @@ def _build_trends(
     return tuple(trends)
 
 
+def _load_new_job_groups(
+    connection,
+    *,
+    snapshot_date: date,
+    headers: Sequence[SnapshotHeader],
+) -> tuple[KeywordNewJobs, ...]:
+    """按关键词顺序加载前日差集，并保留“无基线”和“零新增”的区别。"""
+    groups: list[KeywordNewJobs] = []
+    for header in headers:
+        previous = get_snapshot(
+            connection,
+            snapshot_date=snapshot_date - timedelta(days=1),
+            search_keyword=header.search_keyword,
+        )
+        if previous is None or _collection_scope(previous) != _collection_scope(header):
+            groups.append(KeywordNewJobs(header.search_keyword, None))
+            continue
+        postings = list_new_job_postings(
+            connection,
+            current_snapshot_id=header.id,
+            previous_snapshot_id=previous.id,
+            keyword=header.search_keyword,
+        )
+        groups.append(KeywordNewJobs(header.search_keyword, postings))
+    return tuple(groups)
+
+
 def _record_group_result(
     connection,
     *,
@@ -355,13 +387,16 @@ def build_multi_keyword_wechat_parts(
 ) -> tuple[WechatArticleData, bytes]:
     """复用 Telegram 的多关键词趋势口径，生成微信文章数据和同一张趋势图。"""
     normalized = _validated_keywords(keywords)
-    headers, missing = _load_headers(
-        connection, snapshot_date=snapshot_date, keywords=normalized
-    )
+    headers, missing = _load_headers(connection, snapshot_date=snapshot_date, keywords=normalized)
     if missing:
         raise MultiKeywordSnapshotMissing(missing)
     _validate_shared_scope(headers)
     trends = _build_trends(connection, snapshot_date=snapshot_date, headers=headers)
+    new_job_groups = _load_new_job_groups(
+        connection,
+        snapshot_date=snapshot_date,
+        headers=headers,
+    )
     image = (
         build_keyword_city_heatmap_png(trends, cities=headers[0].cities)
         if all(trend.new_by_city is not None for trend in trends)
@@ -372,6 +407,7 @@ def build_multi_keyword_wechat_parts(
         trends=trends,
         city_count=headers[0].city_count,
         pages_per_city=headers[0].pages_per_city,
+        new_job_groups=new_job_groups,
     )
     return article_data, image
 
@@ -408,9 +444,7 @@ def send_multi_keyword_report(
         snapshot_date=snapshot_date,
         headers=headers,
     )
-    selected_text_sender = text_sender or (
-        lambda value: send_telegram_text(value, max_attempts=1)
-    )
+    selected_text_sender = text_sender or (lambda value: send_telegram_text(value, max_attempts=1))
     selected_photo_sender = photo_sender or (
         lambda value: send_telegram_photo(value, max_attempts=1)
     )
@@ -502,8 +536,7 @@ def _recovery_text_receipt_known(deliveries: Sequence[ReportDelivery]) -> bool:
         return False
     if status == "failed":
         if not all(
-            (delivery.last_error_type or "").startswith("telegram_")
-            for delivery in deliveries
+            (delivery.last_error_type or "").startswith("telegram_") for delivery in deliveries
         ):
             raise MultiKeywordDeliveryStateError("legacy failure has no Telegram evidence")
         return False

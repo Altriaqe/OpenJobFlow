@@ -29,12 +29,15 @@ from jobflow.reports.daily_service import (
 )
 from jobflow.reports.multi_keyword_service import (
     MultiKeywordDeliveryStateError,
+    MultiKeywordScopeError,
     MultiKeywordSnapshotMissing,
     get_multi_keyword_report_status,
     recover_multi_keyword_report_photo,
     send_multi_keyword_report,
 )
 from jobflow.reports.wechat_service import (
+    generate_wechat_article_from_snapshots,
+    get_wechat_article_status,
     get_wechat_daily_report_status,
     send_wechat_report_from_snapshots,
 )
@@ -75,6 +78,14 @@ def get_wechat_daily_report_sender():
 
 def get_wechat_daily_status_reader():
     return get_wechat_daily_report_status
+
+
+def get_wechat_article_generator():
+    return generate_wechat_article_from_snapshots
+
+
+def get_wechat_article_status_reader():
+    return get_wechat_article_status
 
 
 def require_report_token(
@@ -237,7 +248,9 @@ def send_wechat_daily_snapshot_report(
     except MultiKeywordSnapshotMissing as exc:
         raise HTTPException(status_code=409, detail="daily snapshots incomplete") from exc
     except ValueError as exc:
-        raise HTTPException(status_code=409, detail="report delivery requires manual action") from exc
+        raise HTTPException(
+            status_code=409, detail="report delivery requires manual action"
+        ) from exc
     except WechatDeliveryUncertain as exc:
         raise HTTPException(status_code=502, detail="report delivery result uncertain") from exc
     except WechatDeliveryError as exc:
@@ -261,12 +274,50 @@ def resend_wechat_daily_snapshot_report(
     try:
         return report_sender(connection, snapshot_date=snapshot_date, allow_uncertain=True)
     except ValueError as exc:
-        raise HTTPException(status_code=409, detail="report delivery requires manual action") from exc
+        raise HTTPException(
+            status_code=409, detail="report delivery requires manual action"
+        ) from exc
     except WechatDeliveryUncertain as exc:
         raise HTTPException(status_code=502, detail="report delivery result uncertain") from exc
     except WechatDeliveryError as exc:
         raise HTTPException(status_code=502, detail="report delivery failed") from exc
     except (WechatConfigurationError, WechatTokenError) as exc:
         raise HTTPException(status_code=503, detail="report service unavailable") from exc
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="report service unavailable") from exc
+
+
+@router.post(
+    "/daily/multi/wechat/article/generate",
+    dependencies=[Depends(require_report_token)],
+)
+def generate_wechat_daily_article(
+    snapshot_date: date,
+    connection=Depends(get_connection),
+    generator=Depends(get_wechat_article_generator),
+):
+    """生成供人工审核的公众号文章包，不调用微信发送接口。"""
+    try:
+        return generator(connection, snapshot_date=snapshot_date)
+    except (MultiKeywordSnapshotMissing, MultiKeywordScopeError, ValueError) as exc:
+        raise HTTPException(
+            status_code=409,
+            detail="wechat article cannot be generated",
+        ) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="report service unavailable") from exc
+
+
+@router.get(
+    "/daily/multi/wechat/article/status",
+    dependencies=[Depends(require_report_token)],
+)
+def wechat_daily_article_status(
+    snapshot_date: date,
+    status_reader=Depends(get_wechat_article_status_reader),
+):
+    """返回文章包生成状态，不读取数据库或暴露文件路径。"""
+    try:
+        return status_reader(snapshot_date=snapshot_date)
     except Exception as exc:
         raise HTTPException(status_code=503, detail="report service unavailable") from exc
