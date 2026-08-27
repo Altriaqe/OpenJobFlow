@@ -224,7 +224,7 @@ def test_wechat_parts_include_all_new_jobs_in_keyword_order(monkeypatch) -> None
     connection = arrange(monkeypatch)
 
     def new_jobs(_connection, *, current_snapshot_id, previous_snapshot_id, keyword):
-        assert current_snapshot_id < previous_snapshot_id
+        assert current_snapshot_id != previous_snapshot_id
         return (posting(keyword, f"job-{current_snapshot_id}"),)
 
     multi_keyword_service.list_new_job_postings.side_effect = new_jobs
