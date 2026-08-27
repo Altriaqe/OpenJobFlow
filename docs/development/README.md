@@ -7,12 +7,14 @@
 1. [`../project-handoff.md`](../project-handoff.md)：当前 Git、部署和下一步。
 2. [`specs/2026-08-27-v1-3-3-wechat-daily-new-jobs-article-design.md`](specs/2026-08-27-v1-3-3-wechat-daily-new-jobs-article-design.md)：V1.3.3 微信每日新增岗位公告设计。
 3. [`plans/2026-08-27-v1-3-3-wechat-daily-new-jobs-article.md`](plans/2026-08-27-v1-3-3-wechat-daily-new-jobs-article.md)：V1.3.3 实施计划。
-4. [`specs/2026-08-26-wechat-official-daily-delivery-design.md`](specs/2026-08-26-wechat-official-daily-delivery-design.md)：V1.3.2 微信推送设计。
-5. [`plans/2026-08-26-wechat-official-daily-delivery.md`](plans/2026-08-26-wechat-official-daily-delivery.md)：V1.3.2 实施计划。
-6. [`specs/2026-08-27-wechat-article-package-permissions-design.md`](specs/2026-08-27-wechat-article-package-permissions-design.md)：文章包权限修复设计。
-7. [`plans/2026-08-27-wechat-article-package-permissions.md`](plans/2026-08-27-wechat-article-package-permissions.md)：文章包权限修复计划。
-8. [`specs/2026-08-27-documentation-reorganization-design.md`](specs/2026-08-27-documentation-reorganization-design.md)：文档目录整理设计。
-9. [`plans/2026-08-27-documentation-reorganization.md`](plans/2026-08-27-documentation-reorganization.md)：文档目录整理计划。
+4. [`specs/2026-08-27-wechat-markdown-job-divider-design.md`](specs/2026-08-27-wechat-markdown-job-divider-design.md)：公众号 Markdown 导入兼容与标准排版设计。
+5. [`plans/2026-08-27-wechat-markdown-job-divider.md`](plans/2026-08-27-wechat-markdown-job-divider.md)：公众号 Markdown 标准排版实施计划。
+6. [`specs/2026-08-26-wechat-official-daily-delivery-design.md`](specs/2026-08-26-wechat-official-daily-delivery-design.md)：V1.3.2 微信推送设计。
+7. [`plans/2026-08-26-wechat-official-daily-delivery.md`](plans/2026-08-26-wechat-official-daily-delivery.md)：V1.3.2 实施计划。
+8. [`specs/2026-08-27-wechat-article-package-permissions-design.md`](specs/2026-08-27-wechat-article-package-permissions-design.md)：文章包权限修复设计。
+9. [`plans/2026-08-27-wechat-article-package-permissions.md`](plans/2026-08-27-wechat-article-package-permissions.md)：文章包权限修复计划。
+10. [`specs/2026-08-27-documentation-reorganization-design.md`](specs/2026-08-27-documentation-reorganization-design.md)：文档目录整理设计。
+11. [`plans/2026-08-27-documentation-reorganization.md`](plans/2026-08-27-documentation-reorganization.md)：文档目录整理计划。
 
 ## 状态边界
 

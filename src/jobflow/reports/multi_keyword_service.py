@@ -406,6 +406,7 @@ def build_multi_keyword_wechat_parts(
         report_date=snapshot_date,
         trends=trends,
         city_count=headers[0].city_count,
+        cities=headers[0].cities,
         pages_per_city=headers[0].pages_per_city,
         new_job_groups=new_job_groups,
     )

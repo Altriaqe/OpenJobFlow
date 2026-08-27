@@ -19,7 +19,14 @@ PNG = b"\x89PNG\r\n\x1a\nreport"
 
 
 def article_data():
-    return WechatArticleData(date(2026, 8, 26), 4, 3, (("AI Agent", 10, 2),), ())
+    return WechatArticleData(
+        date(2026, 8, 26),
+        4,
+        ("上海", "北京", "杭州", "深圳"),
+        3,
+        (("AI Agent", 10, 2),),
+        (),
+    )
 
 
 def test_service_generates_package_and_records_sent(monkeypatch, tmp_path):

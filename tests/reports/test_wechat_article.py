@@ -29,6 +29,7 @@ def posting(
     external_id: str,
     *,
     title: str = "AI Agent 工程师",
+    salary_text: str | None = None,
     skills: tuple[str, ...] = ("Python", "LLM"),
     detail_url: str | None = "https://example.test/jobs/1",
 ) -> NewJobPosting:
@@ -39,7 +40,7 @@ def posting(
         title=title,
         company="<示例>公司",
         city="上海",
-        salary_text=None,
+        salary_text=salary_text,
         salary_min=None,
         salary_max=None,
         salary_unit=None,
@@ -70,6 +71,7 @@ def sample_data() -> WechatArticleData:
     return WechatArticleData(
         report_date=date(2026, 8, 26),
         city_count=4,
+        cities=("上海", "北京", "杭州", "深圳"),
         pages_per_city=3,
         keyword_rows=(("AI Agent", 18, 3), ("Python开发", 21, None)),
         city_advantages=(("上海", "AI Agent", 5), ("北京", "Python开发", 7)),
@@ -78,9 +80,18 @@ def sample_data() -> WechatArticleData:
             KeywordNewJobs(
                 "AI Agent",
                 (
-                    posting("job-1"),
-                    posting("job-2", skills=(), detail_url=None),
-                    posting("job-3", title="Python & Agent"),
+                    posting("job-1", salary_text="250-350元/天"),
+                    posting(
+                        "job-2",
+                        skills=(),
+                        detail_url="https://example.test/jobs/2",
+                    ),
+                    posting(
+                        "job-3",
+                        title="Python & Agent",
+                        salary_text="15-30K·16薪",
+                        detail_url="https://example.test/jobs/3",
+                    ),
                 ),
             ),
             KeywordNewJobs("Python开发", None),
@@ -123,6 +134,34 @@ def test_html_has_no_script_remote_resource_or_sensitive_fields(tmp_path):
     assert "薪资面议" in html
     assert 'src="trend.png"' in html
     assert "学历要求：" not in html
+    assert "<p>数据来源，仅供学习研究。</p>" in html
+    assert "固定页数招聘岗位样本" not in html
+    assert "今日新增岗位：3" in html
+    assert "搜索关键词：AI Agent、Python开发" in html
+    assert "覆盖城市：上海、北京、杭州、深圳" in html
+    assert "今日新增岗位样本" not in html
+    assert "采集口径" not in html
+
+
+def test_markdown_uses_official_account_compatible_job_blocks(tmp_path):
+    write_wechat_article(sample_data(), PNG, COVER, tmp_path / "wechat")
+    markdown = (tmp_path / "wechat" / "article.md").read_text(encoding="utf-8")
+
+    assert "#### AI Agent 工程师" not in markdown
+    assert "**AI Agent 工程师｜250-350元/天**" in markdown
+    assert "**AI Agent 工程师｜薪资面议**" in markdown
+    assert "**Python & Agent｜15-30K·16薪**" in markdown
+    assert "**<示例>公司**" in markdown
+    assert markdown.count("\n---\n") == 2
+    assert "[查看岗位详情 →](https://example.test/jobs/1)" in markdown
+    assert markdown.count("[查看岗位详情 →](https://example.test/jobs/") == 3
+    assert markdown.endswith("数据来源，仅供学习研究。\n")
+    assert "固定页数招聘岗位样本" not in markdown
+    assert "> 今日新增岗位：3" in markdown
+    assert "> 搜索关键词：AI Agent、Python开发" in markdown
+    assert "> 覆盖城市：上海、北京、杭州、深圳" in markdown
+    assert "今日新增岗位样本" not in markdown
+    assert "采集口径" not in markdown
 
 
 def test_markdown_and_html_render_education_without_repeating_skill_tag(tmp_path):
@@ -137,6 +176,7 @@ def test_markdown_and_html_render_education_without_repeating_skill_tag(tmp_path
     data = WechatArticleData(
         data.report_date,
         data.city_count,
+        data.cities,
         data.pages_per_city,
         data.keyword_rows,
         data.city_advantages,
@@ -170,6 +210,23 @@ def test_invalid_image_is_rejected(tmp_path):
         write_wechat_article(sample_data(), b"not-an-image", COVER, tmp_path / "wechat")
 
 
+def test_article_cities_must_match_city_count(tmp_path):
+    data = sample_data()
+    invalid = WechatArticleData(
+        data.report_date,
+        data.city_count,
+        ("上海", "北京"),
+        data.pages_per_city,
+        data.keyword_rows,
+        data.city_advantages,
+        data.weekly_summary,
+        data.new_job_groups,
+    )
+
+    with pytest.raises(ValueError, match="cities must match city_count"):
+        write_wechat_article(invalid, PNG, COVER, tmp_path / "wechat")
+
+
 def test_invalid_or_unsafe_job_fields_are_rejected(tmp_path):
     data = sample_data()
     unsafe = KeywordNewJobs(
@@ -179,6 +236,7 @@ def test_invalid_or_unsafe_job_fields_are_rejected(tmp_path):
     data = WechatArticleData(
         data.report_date,
         data.city_count,
+        data.cities,
         data.pages_per_city,
         data.keyword_rows,
         data.city_advantages,
@@ -199,6 +257,7 @@ def test_required_job_fields_must_not_be_blank(tmp_path, field):
     data = WechatArticleData(
         data.report_date,
         data.city_count,
+        data.cities,
         data.pages_per_city,
         data.keyword_rows,
         data.city_advantages,
@@ -215,6 +274,7 @@ def test_complete_baseline_with_zero_new_jobs_renders_empty_notice(tmp_path):
     data = WechatArticleData(
         data.report_date,
         data.city_count,
+        data.cities,
         data.pages_per_city,
         data.keyword_rows,
         data.city_advantages,
@@ -243,10 +303,15 @@ def test_build_article_data_reuses_keyword_trend_metrics():
     trends = (KeywordTrend("AI Agent", daily, None),)
 
     data = build_article_data(
-        report_date=date(2026, 8, 26), trends=trends, city_count=4, pages_per_city=3
+        report_date=date(2026, 8, 26),
+        trends=trends,
+        city_count=4,
+        cities=("上海", "北京", "杭州", "深圳"),
+        pages_per_city=3,
     )
 
     assert data.keyword_rows == (("AI Agent", 10, 2),)
+    assert data.cities == ("上海", "北京", "杭州", "深圳")
 
 
 def test_article_package_can_be_replaced_as_a_complete_directory(tmp_path):

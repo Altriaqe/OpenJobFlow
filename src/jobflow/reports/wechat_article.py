@@ -32,6 +32,7 @@ class WechatArticleData:
 
     report_date: date
     city_count: int
+    cities: tuple[str, ...]
     pages_per_city: int
     keyword_rows: tuple[tuple[str, int, int | None], ...]
     city_advantages: tuple[tuple[str, str, int], ...]
@@ -56,6 +57,7 @@ def build_article_data(
     report_date: date,
     trends: tuple[KeywordTrend, ...],
     city_count: int,
+    cities: tuple[str, ...],
     pages_per_city: int,
     new_job_groups: tuple[KeywordNewJobs, ...] = (),
 ) -> WechatArticleData:
@@ -93,6 +95,7 @@ def build_article_data(
     return WechatArticleData(
         report_date=report_date,
         city_count=city_count,
+        cities=cities,
         pages_per_city=pages_per_city,
         keyword_rows=keyword_rows,
         city_advantages=tuple(city_advantages),
@@ -104,6 +107,13 @@ def build_article_data(
 def _validate(data: WechatArticleData, trend_png: bytes, cover_png: bytes) -> None:
     if data.city_count <= 0 or data.pages_per_city <= 0:
         raise ValueError("article scope must be positive")
+    cities = tuple(city.strip() for city in data.cities)
+    if (
+        len(cities) != data.city_count
+        or any(not city for city in cities)
+        or len(set(cities)) != len(cities)
+    ):
+        raise ValueError("article cities must match city_count and be unique")
     if not data.keyword_rows:
         raise ValueError("article requires keyword rows")
     if not trend_png.startswith(b"\x89PNG\r\n\x1a\n"):
@@ -194,10 +204,9 @@ def _build_markdown(data: WechatArticleData) -> str:
     lines = [
         f"# {data.report_date.isoformat()} 每日新增岗位公告",
         "",
-        f"> 今日新增岗位样本：{_new_job_count(data)}",
-        f"> 搜索关键词：{len(data.keyword_rows)}",
-        f"> 覆盖城市：{data.city_count}",
-        f"> 采集口径：每关键词 × 每城市固定 {data.pages_per_city} 页",
+        f"> 今日新增岗位：{_new_job_count(data)}",
+        f"> 搜索关键词：{'、'.join(row[0] for row in data.keyword_rows)}",
+        f"> 覆盖城市：{'、'.join(data.cities)}",
         "",
         "## 关键词趋势",
         "",
@@ -223,13 +232,14 @@ def _build_markdown(data: WechatArticleData) -> str:
             lines.extend([f"### {group.keyword} · 基线建立中", ""])
             continue
         lines.extend([f"### {group.keyword} · 新增 {len(group.postings)} 个", ""])
-        for posting in _sorted_postings(group.postings):
+        sorted_postings = _sorted_postings(group.postings)
+        for index, posting in enumerate(sorted_postings):
             education_label, skills_label = _requirement_labels(posting)
             lines.extend(
                 [
-                    f"#### {posting.title}　{_salary_label(posting)}",
+                    f"**{posting.title}｜{_salary_label(posting)}**",
                     "",
-                    posting.company,
+                    f"**{posting.company}**",
                     "",
                     f"工作地点：{posting.city}",
                 ]
@@ -240,7 +250,9 @@ def _build_markdown(data: WechatArticleData) -> str:
             if posting.detail_url:
                 lines.extend(["", f"[查看岗位详情 →]({posting.detail_url})"])
             lines.append("")
-    lines.extend(["", "数据来源：固定页数招聘岗位样本，仅供学习研究。", ""])
+            if index < len(sorted_postings) - 1:
+                lines.extend(["---", ""])
+    lines.extend(["", "数据来源，仅供学习研究。", ""])
     return "\n".join(lines)
 
 
@@ -305,9 +317,9 @@ def _build_html(data: WechatArticleData) -> str:
         "font-weight:700;white-space:nowrap}.company{font-weight:600}a{color:#1738c8;text-decoration:none}"
         ".empty{padding:24px;text-align:center;background:#f5f7fa;border-radius:12px}</style></head><body>"
         f"<h1>{title}</h1>"
-        f'<div class="summary"><p>今日新增岗位样本：{_new_job_count(data)}<br>'
-        f"搜索关键词：{len(data.keyword_rows)}<br>覆盖城市：{data.city_count}<br>"
-        f"采集口径：每关键词 × 每城市固定 {data.pages_per_city} 页</p></div>"
+        f'<div class="summary"><p>今日新增岗位：{_new_job_count(data)}<br>'
+        f"搜索关键词：{'、'.join(html.escape(row[0]) for row in data.keyword_rows)}<br>"
+        f"覆盖城市：{'、'.join(html.escape(city) for city in data.cities)}</p></div>"
         "<h2>关键词趋势</h2><table><thead><tr><th>关键词</th>"
         "<th>当前样本</th><th>较前日新增</th></tr></thead>"
         f"<tbody>{rows}</tbody></table>"
@@ -325,7 +337,7 @@ def _build_html(data: WechatArticleData) -> str:
         )
         + "<h2>今日新增岗位</h2>"
         + "".join(groups)
-        + "<p>数据来源：固定页数招聘岗位样本，仅供学习研究。</p></body></html>"
+        + "<p>数据来源，仅供学习研究。</p></body></html>"
     )
 
 
