@@ -96,8 +96,16 @@ git diff --check：通过
 
 ## V1.3.2 文章排版包首个可行版本
 
-`src/jobflow/reports/wechat_article.py` 目前提供纯离线 `WechatArticleData` 和 `write_wechat_article`：输入固定范围聚合指标与 PNG，输出 `article.md`、`article.html`、`trend.png`、`manifest.json`。HTML 只使用静态标签并进行转义，不包含脚本、远程资源、原始岗位明细或凭据；四个文件使用临时目录写入后替换，避免留下半套文章包。
+`src/jobflow/reports/wechat_article.py` 目前提供纯离线 `WechatArticleData` 和 `write_wechat_article`：输入固定范围聚合指标与 PNG，输出机器稳定的 `article.md`、动态命名的 `YYYY-MM-DD 每日新增岗位公告.md`、`article.html`、`cover.png`、`trend.png` 和 `manifest.json`。公众号导入文件不含一级标题，避免文件名成为图文标题后正文再次重复标题；全部文件使用临时目录写入后替换，避免留下半套文章包。
 
 本机验证：文章包测试 3 项通过。当前仅完成排版包契约，尚未接入 FastAPI、数据库状态或微信真实接口。
 
 配置接线：`.env.example` 和 `compose.yaml` 已加入 `WECHAT_ENABLED`、`WECHAT_APP_ID`、`WECHAT_APP_SECRET`、`WECHAT_OPENID`、`WECHAT_TEMPLATE_ID`。默认关闭微信；Compose 只把变量传入 API 容器，真实值仍由部署者在服务器私有 `.env` 中维护。
+
+## 个人公众号为什么改用岗位明文网址
+
+真实发布测试表明，Markdown 导入后岗位外链会暂时显示，但个人公众号在保存草稿时可能清除外部超链接。这个限制发生在微信公众号发布层，不属于抓取、ETL 或 Telegram 渠道的问题，因此不应修改原始岗位数据，也不应影响 Telegram。
+
+解决位置放在 `src/jobflow/reports/wechat_article.py` 的 WeChat 渲染器：继续读取并校验 `detail_url`，Markdown 输出“岗位原始地址（复制后打开）”加完整网址，HTML 输出经过转义的普通文字，不再生成 Markdown 或 HTML 超链接。当来源没有链接时隐藏整段。正文继续完整展示岗位信息，结尾增加数据来源和真实性提醒。这样即使网址不能直接点击，保存草稿后仍可见并可复制，同时保持各渠道职责独立。
+
+2026-08-28 真实公众号复测通过：导入 Markdown 并保存草稿后，岗位名称、薪资、公司、地点、技能、岗位分隔线和“岗位原始地址（复制后打开）”均保留。该结果证明明文网址方案可以绕开个人公众号保存草稿时清除外部超链接的问题；是否自动变为可点击链接仍不作为验收条件。

@@ -99,11 +99,13 @@ def sample_data() -> WechatArticleData:
     )
 
 
-def test_article_package_contains_five_deterministic_files(tmp_path):
+def test_article_package_contains_machine_and_official_account_markdown(tmp_path):
     manifest = write_wechat_article(sample_data(), PNG, COVER, tmp_path / "wechat")
+    import_filename = "2026-08-26 每日新增岗位公告.md"
 
     assert manifest.files == (
         "article.md",
+        import_filename,
         "article.html",
         "cover.png",
         "trend.png",
@@ -112,7 +114,12 @@ def test_article_package_contains_five_deterministic_files(tmp_path):
     assert manifest.new_job_count == 3
     assert (tmp_path / "wechat" / "trend.png").read_bytes() == PNG
     assert (tmp_path / "wechat" / "cover.png").read_bytes() == COVER
-    assert "每日新增岗位公告" in (tmp_path / "wechat" / "article.md").read_text(encoding="utf-8")
+    machine_markdown = (tmp_path / "wechat" / "article.md").read_text(encoding="utf-8")
+    import_markdown = (tmp_path / "wechat" / import_filename).read_text(encoding="utf-8")
+    assert machine_markdown.startswith("# 2026-08-26 每日新增岗位公告\n")
+    assert import_markdown.startswith("> 今日新增岗位：3\n")
+    assert "# 2026-08-26 每日新增岗位公告" not in import_markdown
+    assert machine_markdown.split("\n", 2)[2] == import_markdown
     payload = json.loads((tmp_path / "wechat" / "manifest.json").read_text(encoding="utf-8"))
     assert payload["report_date"] == "2026-08-26"
     assert payload["keyword_counts"] == [["AI Agent", 3], ["Python开发", None]]
@@ -129,12 +136,17 @@ def test_html_has_no_script_remote_resource_or_sensitive_fields(tmp_path):
     assert "appsecret" not in html.lower()
     assert html.count('class="job-card"') == 3
     assert "&lt;示例&gt;公司" in html
-    assert 'href="https://example.test/jobs/1"' in html
+    assert "岗位原始地址（复制后打开）：<br>https://example.test/jobs/1" in html
+    assert html.count("岗位原始地址（复制后打开）：<br>https://example.test/jobs/") == 3
+    assert 'href="https://example.test/jobs/' not in html
     assert "暂无明确技能标签" in html
     assert "薪资面议" in html
     assert 'src="trend.png"' in html
     assert "学历要求：" not in html
-    assert "<p>数据来源，仅供学习研究。</p>" in html
+    assert (
+        "<p>岗位信息来源于公开招聘页面，仅供学习研究。"
+        "请以招聘平台原始页面及招聘方实际信息为准。</p>"
+    ) in html
     assert "固定页数招聘岗位样本" not in html
     assert "今日新增岗位：3" in html
     assert "搜索关键词：AI Agent、Python开发" in html
@@ -153,9 +165,12 @@ def test_markdown_uses_official_account_compatible_job_blocks(tmp_path):
     assert "**Python & Agent｜15-30K·16薪**" in markdown
     assert "**<示例>公司**" in markdown
     assert markdown.count("\n---\n") == 2
-    assert "[查看岗位详情 →](https://example.test/jobs/1)" in markdown
-    assert markdown.count("[查看岗位详情 →](https://example.test/jobs/") == 3
-    assert markdown.endswith("数据来源，仅供学习研究。\n")
+    assert "岗位原始地址（复制后打开）：\nhttps://example.test/jobs/1" in markdown
+    assert markdown.count("岗位原始地址（复制后打开）：\nhttps://example.test/jobs/") == 3
+    assert "[查看岗位详情 →](" not in markdown
+    assert markdown.endswith(
+        "岗位信息来源于公开招聘页面，仅供学习研究。请以招聘平台原始页面及招聘方实际信息为准。\n"
+    )
     assert "固定页数招聘岗位样本" not in markdown
     assert "> 今日新增岗位：3" in markdown
     assert "> 搜索关键词：AI Agent、Python开发" in markdown
@@ -203,6 +218,31 @@ def test_markdown_and_html_hide_education_when_source_does_not_provide_it(tmp_pa
 
     assert "学历要求：" not in markdown
     assert "学历要求：" not in document
+
+
+def test_markdown_and_html_hide_job_url_when_source_does_not_provide_it(tmp_path):
+    data = sample_data()
+    groups = (
+        KeywordNewJobs("AI Agent", (posting("without-url", detail_url=None),)),
+        KeywordNewJobs("Python开发", None),
+    )
+    data = WechatArticleData(
+        data.report_date,
+        data.city_count,
+        data.cities,
+        data.pages_per_city,
+        data.keyword_rows,
+        data.city_advantages,
+        data.weekly_summary,
+        groups,
+    )
+
+    write_wechat_article(data, PNG, COVER, tmp_path / "wechat")
+    markdown = (tmp_path / "wechat" / "article.md").read_text(encoding="utf-8")
+    document = (tmp_path / "wechat" / "article.html").read_text(encoding="utf-8")
+
+    assert "岗位原始地址（复制后打开）：" not in markdown
+    assert "岗位原始地址（复制后打开）：" not in document
 
 
 def test_invalid_image_is_rejected(tmp_path):
@@ -324,6 +364,7 @@ def test_article_package_can_be_replaced_as_a_complete_directory(tmp_path):
     assert not (output / "stale.txt").exists()
     assert {path.name for path in output.iterdir()} == {
         "article.md",
+        "2026-08-26 每日新增岗位公告.md",
         "article.html",
         "cover.png",
         "trend.png",

@@ -29,13 +29,18 @@ from jobflow.reports.wechat_template import build_wechat_template_data
 
 REPORT_KEY = "multi_keyword_daily"
 CHANNEL = "wechat_test_template"
-ARTICLE_FILES = (
-    "article.md",
-    "article.html",
-    "cover.png",
-    "trend.png",
-    "manifest.json",
-)
+
+
+def _article_files(snapshot_date: date) -> tuple[str, ...]:
+    """返回指定日期的完整文章包文件名，包括公众号导入专用 Markdown。"""
+    return (
+        "article.md",
+        f"{snapshot_date.isoformat()} 每日新增岗位公告.md",
+        "article.html",
+        "cover.png",
+        "trend.png",
+        "manifest.json",
+    )
 
 
 def _enabled() -> bool:
@@ -189,9 +194,10 @@ def get_wechat_article_status(
         return pending
     if payload.get("report_date") != snapshot_date.isoformat():
         return pending
-    if tuple(payload.get("files", ())) != ARTICLE_FILES:
+    article_files = _article_files(snapshot_date)
+    if tuple(payload.get("files", ())) != article_files:
         return pending
-    if not all((output_dir / filename).is_file() for filename in ARTICLE_FILES):
+    if not all((output_dir / filename).is_file() for filename in article_files):
         return pending
     new_job_count = payload.get("new_job_count")
     keyword_counts = payload.get("keyword_counts")

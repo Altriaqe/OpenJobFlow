@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 让 OpenJobFlow 生成的 `article.md` 导入微信公众号后完整显示岗位名称、薪资和公司，并用细分隔线区分相邻岗位。
+**Goal:** 让 OpenJobFlow 生成动态命名的公众号导入 Markdown，正确显示图文标题、岗位名称、薪资和公司，并用细分隔线区分相邻岗位。
 
 **Architecture:** 保留现有 `WechatArticleData`、文章包结构和 HTML 预览，只调整 `_build_markdown` 的单岗位文本结构。岗位名称与薪资改为同一粗体普通段落，公司改为粗体普通段落，相邻岗位之间插入 Markdown 水平线 `---`；先由单元测试固定格式，再生成 3 岗位小样进行公众号真实导入验收。
 
@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- 只修改微信公众号 `article.md` 的岗位展示格式。
+- 只修改微信公众号文章包和 Markdown 展示格式。
 - Telegram 内容、抓取规则、岗位数量、岗位排序、数据字段和 HTML 预览保持不变。
 - 岗位名称与薪资使用同一粗体普通段落，中间使用全角竖线 `｜`。
 - 公司名称使用粗体普通段落。
@@ -21,6 +21,8 @@
 - 搜索关键词显示 `keyword_rows` 中的具体名称，使用 `、` 连接，不显示关键词数量。
 - 覆盖城市显示快照头 `cities` 中的具体名称，使用 `、` 连接，不显示城市数量。
 - 摘要不显示采集页数；文章结尾固定为 `数据来源，仅供学习研究。`。
+- 保留 `article.md`，额外生成 `YYYY-MM-DD 每日新增岗位公告.md` 作为公众号导入文件。
+- 动态导入文件不包含一级标题，避免公众号正文重复标题；其余内容与 `article.md` 一致。
 - 不开发小程序、自动发布或岗位落地页。
 - 未经用户明确授权不得 commit、push、merge 或部署。
 - OpenJobFlow 提交标题使用自然中文，不加 `feat:`、`fix:`、`docs:` 前缀，也不加入助手名字。
@@ -32,7 +34,7 @@
 - Modify `src/jobflow/reports/wechat_article.py`：生成公众号文章包；本次调整文章数据、顶部摘要和单岗位 Markdown 结构。
 - Modify `src/jobflow/reports/multi_keyword_service.py`：把快照头中的真实城市列表传给公众号文章数据。
 - Modify `tests/reports/test_wechat_article.py`：固定公众号兼容的粗体标题、公司和岗位分隔线契约。
-- Generate `.pytest_tmp/wechat-markdown-sample/test_article_package_contains_0/wechat/article.md`：通过现有 3 岗位测试夹具生成不进入 Git 的公众号导入小样。
+- Generate `.pytest_tmp/wechat-markdown-sample/test_article_package_contains_0/wechat/2026-08-26 每日新增岗位公告.md`：通过现有 3 岗位测试夹具生成不进入 Git 的公众号导入小样。
 - Keep `docs/development/specs/2026-08-27-wechat-markdown-job-divider-design.md`：记录已确认的设计与人工验收边界。
 
 ### Task 1: 固定公众号兼容的 Markdown 岗位格式
@@ -126,11 +128,11 @@ Expected: 两条命令均以退出码 `0` 结束；第一条显示 `All checks p
 ### Task 2: 生成并验证 3 岗位公众号导入小样
 
 **Files:**
-- Generate: `.pytest_tmp/wechat-markdown-sample/test_article_package_contains_0/wechat/article.md`
+- Generate: `.pytest_tmp/wechat-markdown-sample/test_article_package_contains_0/wechat/2026-08-26 每日新增岗位公告.md`
 
 **Interfaces:**
 - Consumes: `sample_data()`，其中 `AI Agent` 分组固定包含 3 个岗位。
-- Produces: 一个不进入 Git、可直接导入微信公众号后台的 `article.md` 小样。
+- Produces: 一个不进入 Git、可直接导入微信公众号后台的动态中文文件名小样。
 
 - [ ] **Step 1: 使用现有确定性夹具生成文章包**
 
@@ -140,29 +142,29 @@ Run:
 New-Item -ItemType Directory -Path .pytest_tmp -Force | Out-Null
 $env:PYTHONPATH = (Resolve-Path src).Path
 $env:PYTHONIOENCODING = 'utf-8'
-python -m pytest tests/reports/test_wechat_article.py::test_article_package_contains_five_deterministic_files -q --basetemp=.pytest_tmp/wechat-markdown-sample
+python -m pytest tests/reports/test_wechat_article.py::test_article_package_contains_machine_and_official_account_markdown -q --basetemp=.pytest_tmp/wechat-markdown-sample
 ```
 
-Expected: `1 passed`，并在 `.pytest_tmp/wechat-markdown-sample/` 下生成包含 3 个岗位的 `wechat/article.md`。
+Expected: `1 passed`，并在 `.pytest_tmp/wechat-markdown-sample/` 下生成包含 3 个岗位的 `wechat/2026-08-26 每日新增岗位公告.md`。
 
 - [ ] **Step 2: 解析实际小样路径并检查内容**
 
 Run:
 
 ```powershell
-$sample = Get-Item -LiteralPath .pytest_tmp/wechat-markdown-sample/test_article_package_contains_0/wechat/article.md
+$sample = Get-Item -LiteralPath '.pytest_tmp/wechat-markdown-sample/test_article_package_contains_0/wechat/2026-08-26 每日新增岗位公告.md'
 $sample.FullName
 Get-Content -LiteralPath $sample.FullName -Encoding UTF8
 ```
 
-Expected: 输出一个 `article.md` 绝对路径；正文包含 3 个粗体岗位标题、3 个粗体公司名称、2 条独立的 `---` 分隔线，并且没有以 `####` 开头的岗位标题。
+Expected: 输出动态中文文件名的绝对路径；正文直接从摘要开始，包含 3 个粗体岗位标题、3 个粗体公司名称、2 条独立的 `---` 分隔线，并且没有一级标题或以 `####` 开头的岗位标题。
 
 - [ ] **Step 3: 在微信公众号后台进行真实导入验收**
 
 人工操作：
 
 1. 新建或复制一份公众号草稿，保留当前完整草稿不删除。
-2. 导入 Step 2 输出的 `article.md`。
+2. 导入 Step 2 输出的动态中文文件名 Markdown。
 3. 确认 3 个岗位均显示岗位名称、`薪资面议`、公司、地点、技能和详情链接。
 4. 确认相邻岗位之间各有一条细线，最后一个岗位后没有细线。
 5. 发送手机预览并逐一点击 3 个“查看岗位详情 →”。

@@ -97,7 +97,7 @@ PY
 find "runtime/reports/$(date +%F)/wechat" -maxdepth 1 -type f -printf '%f\n' | sort
 ```
 
-预期包含：`article.md`、`article.html`、`cover.png`、`manifest.json`、`trend.png`。
+预期包含：`article.md`、`YYYY-MM-DD 每日新增岗位公告.md`、`article.html`、`cover.png`、`manifest.json`、`trend.png`。人工发布时导入动态中文文件名的 Markdown；`article.md` 保留给机器和排障使用。
 
 新生成的 `wechat` 目录权限应为 `0755`，五个文件权限应为 `0644`。宿主机普通用户应能直接执行上述 `find` 命令，不需要 `sudo`；历史文章包需要重新生成后才会获得新权限。
 
@@ -140,13 +140,18 @@ GET  /reports/daily/multi/wechat/article/status?snapshot_date=<YYYY-MM-DD>
 人工发布流程：
 
 ```text
-检查 runtime/reports/<日期>/wechat/ 五件套
+检查 runtime/reports/<日期>/wechat/ 六个文章包文件
 → 打开 article.html
 → 核对 manifest.json 中总数与分关键词数量
 → 上传 cover.png
 → 标题填写“今日新增岗位”
 → 复制正文并人工发布
-→ 手机确认图文卡片和岗位详情链接
+→ 保存草稿
+→ 手机确认图文卡片和岗位明文网址
 ```
 
-测试号模板消息和正式公众号图文卡片不是同一种消息。只有用户在正式公众号后台完成发布并在手机端确认卡片、正文和详情链接后，才能记录为 V1.3.3 正式发布验收完成。
+个人公众号保存草稿时可能清除岗位外部超链接。OpenJobFlow 的公众号文章因此使用“岗位原始地址（复制后打开）”展示完整岗位网址，不依赖 Markdown 超链接；网址至少应在保存草稿后保持可见并可复制。平台是否自动把网址识别为可点击内容不属于程序验收条件。
+
+正文必须提供岗位名称、公司、城市、薪资、学历和技能等实质信息，网址只作为补充入口。文章结尾固定提示：`岗位信息来源于公开招聘页面，仅供学习研究。请以招聘平台原始页面及招聘方实际信息为准。`
+
+测试号模板消息和正式公众号图文卡片不是同一种消息。只有用户在正式公众号后台完成发布并在手机端确认卡片、正文和岗位网址后，才能记录为 V1.3.3 正式发布验收完成。

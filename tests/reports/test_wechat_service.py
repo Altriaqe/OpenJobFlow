@@ -136,11 +136,18 @@ def test_article_status_distinguishes_pending_and_complete_package(tmp_path):
 
     output = tmp_path / "reports" / "2026-08-27" / "wechat"
     output.mkdir(parents=True)
-    for filename in ("article.md", "article.html", "cover.png", "trend.png"):
+    for filename in (
+        "article.md",
+        "2026-08-27 每日新增岗位公告.md",
+        "article.html",
+        "cover.png",
+        "trend.png",
+    ):
         (output / filename).write_bytes(b"x")
     digest = hashlib.sha256(b"x").hexdigest()
     (output / "manifest.json").write_text(
-        '{"report_date":"2026-08-27","files":["article.md","article.html",'
+        '{"report_date":"2026-08-27","files":["article.md",'
+        '"2026-08-27 每日新增岗位公告.md","article.html",'
         '"cover.png","trend.png","manifest.json"],"new_job_count":2,'
         f'"keyword_counts":[["AI Agent",2],["Python开发",null]],'
         f'"cover_sha256":"{digest}","trend_sha256":"{digest}"}}',

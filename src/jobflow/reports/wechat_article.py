@@ -14,6 +14,12 @@ from urllib.parse import urlparse
 from jobflow.models.snapshot import KeywordTrend, NewJobPosting
 
 
+JOB_URL_LABEL = "岗位原始地址（复制后打开）："
+ARTICLE_DISCLAIMER = (
+    "岗位信息来源于公开招聘页面，仅供学习研究。请以招聘平台原始页面及招聘方实际信息为准。"
+)
+
+
 @dataclass(frozen=True)
 class KeywordNewJobs:
     """一个关键词的新增岗位；None 表示缺少可比较的前日基线。"""
@@ -200,19 +206,22 @@ def _new_job_count(data: WechatArticleData) -> int:
     return sum(len(group.postings) for group in data.new_job_groups if group.postings is not None)
 
 
-def _build_markdown(data: WechatArticleData) -> str:
-    lines = [
-        f"# {data.report_date.isoformat()} 每日新增岗位公告",
-        "",
-        f"> 今日新增岗位：{_new_job_count(data)}",
-        f"> 搜索关键词：{'、'.join(row[0] for row in data.keyword_rows)}",
-        f"> 覆盖城市：{'、'.join(data.cities)}",
-        "",
-        "## 关键词趋势",
-        "",
-        "| 关键词 | 当前样本 | 较前日新增 |",
-        "| --- | ---: | ---: |",
-    ]
+def _build_markdown(data: WechatArticleData, *, include_title: bool = True) -> str:
+    lines: list[str] = []
+    if include_title:
+        lines.extend([f"# {data.report_date.isoformat()} 每日新增岗位公告", ""])
+    lines.extend(
+        [
+            f"> 今日新增岗位：{_new_job_count(data)}",
+            f"> 搜索关键词：{'、'.join(row[0] for row in data.keyword_rows)}",
+            f"> 覆盖城市：{'、'.join(data.cities)}",
+            "",
+            "## 关键词趋势",
+            "",
+            "| 关键词 | 当前样本 | 较前日新增 |",
+            "| --- | ---: | ---: |",
+        ]
+    )
     for keyword, total, new_count in data.keyword_rows:
         change = "基线建立中" if new_count is None else str(new_count)
         lines.append(f"| {keyword} | {total} | {change} |")
@@ -248,11 +257,11 @@ def _build_markdown(data: WechatArticleData) -> str:
                 lines.extend(["", f"学历要求：{education_label}"])
             lines.extend(["", f"技能要求：{skills_label}"])
             if posting.detail_url:
-                lines.extend(["", f"[查看岗位详情 →]({posting.detail_url})"])
+                lines.extend(["", JOB_URL_LABEL, posting.detail_url])
             lines.append("")
             if index < len(sorted_postings) - 1:
                 lines.extend(["---", ""])
-    lines.extend(["", "数据来源，仅供学习研究。", ""])
+    lines.extend(["", ARTICLE_DISCLAIMER, ""])
     return "\n".join(lines)
 
 
@@ -278,12 +287,10 @@ def _build_html(data: WechatArticleData) -> str:
             continue
         cards = []
         for posting in _sorted_postings(group.postings):
-            link = ""
+            job_url = ""
             if posting.detail_url:
                 url = html.escape(posting.detail_url, quote=True)
-                link = (
-                    f'<a href="{url}" target="_blank" rel="noopener noreferrer">查看岗位详情 →</a>'
-                )
+                job_url = f'<p class="job-url">{JOB_URL_LABEL}<br>{url}</p>'
             education_label, skills_label = _requirement_labels(posting)
             education = (
                 f"<p>学历要求：{html.escape(education_label)}</p>"
@@ -300,7 +307,7 @@ def _build_html(data: WechatArticleData) -> str:
                 f"<p>工作地点：{html.escape(posting.city)}</p>"
                 f"{education}"
                 f"<p>技能要求：{html.escape(skills_label)}</p>"
-                f"{link}</article>"
+                f"{job_url}</article>"
             )
         groups.append(
             f"<section><h3>{keyword} · 新增 {len(group.postings)} 个</h3>"
@@ -314,7 +321,7 @@ def _build_html(data: WechatArticleData) -> str:
         ".summary{background:#eef4ff;padding:16px;border-radius:12px}.job-card{border:1px solid "
         "#dbe4f0;border-radius:14px;padding:18px;margin:14px 0}.job-heading{display:flex;gap:16px;"
         "justify-content:space-between;align-items:flex-start}.job-heading h4{margin:0}.salary{color:#e05a2a;"
-        "font-weight:700;white-space:nowrap}.company{font-weight:600}a{color:#1738c8;text-decoration:none}"
+        "font-weight:700;white-space:nowrap}.company{font-weight:600}.job-url{overflow-wrap:anywhere}"
         ".empty{padding:24px;text-align:center;background:#f5f7fa;border-radius:12px}</style></head><body>"
         f"<h1>{title}</h1>"
         f'<div class="summary"><p>今日新增岗位：{_new_job_count(data)}<br>'
@@ -337,7 +344,7 @@ def _build_html(data: WechatArticleData) -> str:
         )
         + "<h2>今日新增岗位</h2>"
         + "".join(groups)
-        + "<p>数据来源，仅供学习研究。</p></body></html>"
+        + f"<p>{ARTICLE_DISCLAIMER}</p></body></html>"
     )
 
 
@@ -347,11 +354,13 @@ def write_wechat_article(
     cover_png: bytes,
     output_dir: Path,
 ) -> ArticleManifest:
-    """原子写出五件套文章包，并返回不含敏感信息的清单。"""
+    """原子写出公众号文章包，并返回不含敏感信息的清单。"""
     _validate(data, trend_png, cover_png)
     output_dir = Path(output_dir)
     output_dir.parent.mkdir(parents=True, exist_ok=True)
     markdown = _build_markdown(data)
+    import_markdown = _build_markdown(data, include_title=False)
+    import_filename = f"{data.report_date.isoformat()} 每日新增岗位公告.md"
     document = _build_html(data)
     trend_digest = hashlib.sha256(trend_png).hexdigest()
     cover_digest = hashlib.sha256(cover_png).hexdigest()
@@ -361,7 +370,14 @@ def write_wechat_article(
     )
     manifest = ArticleManifest(
         report_date=data.report_date.isoformat(),
-        files=("article.md", "article.html", "cover.png", "trend.png", "manifest.json"),
+        files=(
+            "article.md",
+            import_filename,
+            "article.html",
+            "cover.png",
+            "trend.png",
+            "manifest.json",
+        ),
         new_job_count=_new_job_count(data),
         keyword_counts=keyword_counts,
         cover_sha256=cover_digest,
@@ -371,6 +387,7 @@ def write_wechat_article(
     backup_dir: Path | None = None
     try:
         (temp_dir / "article.md").write_text(markdown, encoding="utf-8")
+        (temp_dir / import_filename).write_text(import_markdown, encoding="utf-8")
         (temp_dir / "article.html").write_text(document, encoding="utf-8")
         (temp_dir / "cover.png").write_bytes(cover_png)
         (temp_dir / "trend.png").write_bytes(trend_png)
