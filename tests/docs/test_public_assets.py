@@ -2,7 +2,7 @@ import re
 import subprocess
 from collections import Counter
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
 
 from jobflow.adapters.boss import load_boss_jobs, map_boss_jobs
 
@@ -13,6 +13,11 @@ LICENSE_PATH = ROOT / "LICENSE"
 ENGLISH_README = ROOT / "README.md"
 CHINESE_README = ROOT / "README.zh-CN.md"
 DOCS_INDEX = ROOT / "docs" / "README.md"
+DOCS_ROOT = ROOT / "docs"
+GUIDES_ROOT = DOCS_ROOT / "guides"
+REFERENCE_ROOT = DOCS_ROOT / "reference"
+DEVELOPMENT_ROOT = DOCS_ROOT / "development"
+ARCHIVE_ROOT = DOCS_ROOT / "archive"
 DEMO_IMAGE = ROOT / "docs" / "assets" / "jobflow-demo.png"
 MARKDOWN_LINK = re.compile(r"!?\[[^]]*]\(([^)]+)\)")
 WINDOWS_ABSOLUTE_PATH = re.compile(r"(?<![A-Za-z0-9_])[A-Z]:\\(?![<>])")
@@ -51,7 +56,7 @@ PUBLIC_TEXT_SUFFIXES = {
 PUBLIC_TEXT_FILENAMES = {"Dockerfile", "LICENSE"}
 
 
-def _tracked_public_text_files() -> list[Path]:
+def _public_text_files_for_scan() -> list[Path]:
     result = subprocess.run(
         ["git", "ls-files", "-z"],
         cwd=ROOT,
@@ -60,12 +65,31 @@ def _tracked_public_text_files() -> list[Path]:
         text=True,
         encoding="utf-8",
     )
-    paths = (ROOT / item for item in result.stdout.split("\0") if item)
-    return sorted(
-        path
-        for path in paths
-        if path.name in PUBLIC_TEXT_FILENAMES or path.suffix.lower() in PUBLIC_TEXT_SUFFIXES
-    )
+    tracked_paths = set()
+    for item in result.stdout.split("\0"):
+        if not item:
+            continue
+        path = ROOT / item
+        is_public_text = (
+            path.name in PUBLIC_TEXT_FILENAMES or path.suffix.lower() in PUBLIC_TEXT_SUFFIXES
+        )
+        if path.is_file() and is_public_text:
+            tracked_paths.add(path)
+    documentation_paths = set(DOCS_ROOT.rglob("*.md"))
+    return sorted(tracked_paths | documentation_paths)
+
+
+def _markdown_without_fenced_code(text: str) -> str:
+    visible_lines: list[str] = []
+    inside_fence = False
+    for line in text.splitlines():
+        stripped = line.lstrip()
+        if stripped.startswith(("```", "~~~")):
+            inside_fence = not inside_fence
+            continue
+        if not inside_fence:
+            visible_lines.append(line)
+    return "\n".join(visible_lines)
 
 
 def test_public_sample_is_valid_and_fully_synthetic() -> None:
@@ -192,7 +216,7 @@ def test_bilingual_readmes_keep_critical_commands_and_links_in_sync() -> None:
         "http://127.0.0.1:8000/health",
         "http://127.0.0.1:8000/ready",
         "http://127.0.0.1:8000/docs",
-        "docs/ubuntu-deployment.md",
+        "docs/guides/ubuntu-deployment.md",
         "LICENSE",
     )
     for item in shared:
@@ -212,12 +236,70 @@ def test_bilingual_readme_local_links_resolve() -> None:
             )
 
 
+def test_all_local_markdown_links_resolve() -> None:
+    markdown_files = sorted(
+        path
+        for path in ROOT.rglob("*.md")
+        if ".git" not in path.parts and ".pytest_cache" not in path.parts
+    )
+    broken: list[str] = []
+
+    for markdown_path in markdown_files:
+        text = _markdown_without_fenced_code(markdown_path.read_text(encoding="utf-8"))
+        for raw_target in MARKDOWN_LINK.findall(text):
+            target = raw_target.strip().strip("<>")
+            if target.startswith(("http://", "https://", "mailto:", "#")):
+                continue
+            relative_target = unquote(target.split("#", 1)[0])
+            if not relative_target:
+                continue
+            resolved = markdown_path.parent / relative_target
+            if not resolved.exists():
+                source = markdown_path.relative_to(ROOT).as_posix()
+                broken.append(f"{source} -> {target}")
+
+    assert not broken, "broken local Markdown links:\n" + "\n".join(broken)
+
+
 def test_docs_index_points_to_bilingual_public_entrypoints() -> None:
     text = DOCS_INDEX.read_text(encoding="utf-8")
 
     assert "../README.md" in text
     assert "../README.zh-CN.md" in text
     assert "assets/jobflow-demo.png" in text
+
+
+def test_documentation_is_grouped_by_reader_goal() -> None:
+    required_files = {
+        DOCS_INDEX,
+        DOCS_ROOT / "project-handoff.md",
+        GUIDES_ROOT / "ubuntu-deployment.md",
+        GUIDES_ROOT / "wechat-test-account.md",
+        REFERENCE_ROOT / "architecture.md",
+        REFERENCE_ROOT / "data-sources.md",
+        REFERENCE_ROOT / "platform-evolution-design.md",
+        DEVELOPMENT_ROOT / "README.md",
+        DEVELOPMENT_ROOT / "learning-notes.md",
+        DEVELOPMENT_ROOT / "specs" / "2026-08-26-wechat-official-daily-delivery-design.md",
+        DEVELOPMENT_ROOT / "specs" / "2026-08-27-wechat-article-package-permissions-design.md",
+        DEVELOPMENT_ROOT / "specs" / "2026-08-27-documentation-reorganization-design.md",
+        DEVELOPMENT_ROOT / "plans" / "2026-08-26-wechat-official-daily-delivery.md",
+        DEVELOPMENT_ROOT / "plans" / "2026-08-27-wechat-article-package-permissions.md",
+        DEVELOPMENT_ROOT / "plans" / "2026-08-27-documentation-reorganization.md",
+        ARCHIVE_ROOT / "README.md",
+    }
+    legacy_files = {
+        DOCS_ROOT / "ubuntu-deployment.md",
+        DOCS_ROOT / "wechat-test-account.md",
+        DOCS_ROOT / "architecture.md",
+        DOCS_ROOT / "data-sources.md",
+        DOCS_ROOT / "platform-evolution-design.md",
+        DOCS_ROOT / "learning-notes.md",
+    }
+
+    assert all(path.is_file() for path in required_files)
+    assert not any(path.exists() for path in legacy_files)
+    assert not (DOCS_ROOT / "superpowers").exists()
 
 
 def test_tracked_public_text_does_not_expose_personal_environment() -> None:
@@ -231,7 +313,7 @@ def test_tracked_public_text_does_not_expose_personal_environment() -> None:
         "known secret format": KNOWN_SECRET,
     }
 
-    for path in _tracked_public_text_files():
+    for path in _public_text_files_for_scan():
         for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
             for label, pattern in patterns.items():
                 if pattern.search(line):

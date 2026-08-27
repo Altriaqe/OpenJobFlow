@@ -30,8 +30,8 @@
 - Modify: `ops/daily_update.sh` — 移除个人绝对路径，从脚本位置推导 JobFlow 目录，使用可覆盖的采集器路径。
 - Modify: `tests/ops/test_daily_update_script.py` — 增加公开路径和可移植性契约测试。
 - Modify: `docs/README.md` — 文档阅读路径和公开/个人边界。
-- Modify: `docs/architecture.md` — 当前 V1.1 架构、两种报告模式和真实验收边界。
-- Modify: `docs/ubuntu-deployment.md` — 将个人地址和路径替换为占位符，保留通用部署与维护流程。
+- Modify: `docs/reference/architecture.md` — 当前 V1.1 架构、两种报告模式和真实验收边界。
+- Modify: `docs/guides/ubuntu-deployment.md` — 将个人地址和路径替换为占位符，保留通用部署与维护流程。
 - Modify: `docs/project-handoff.md` — 记录 V1.1 最终交接和 V1.2 停点，不包含个人服务器信息。
 
 ### Personal knowledge-base files
@@ -296,8 +296,8 @@ Expected: headings appear in the approved order and the restricted-information s
 
 **Files:**
 - Modify: `docs/README.md`
-- Modify: `docs/architecture.md`
-- Modify: `docs/ubuntu-deployment.md`
+- Modify: `docs/reference/architecture.md`
+- Modify: `docs/guides/ubuntu-deployment.md`
 - Modify: `docs/project-handoff.md`
 
 **Interfaces:**
@@ -344,8 +344,8 @@ Run:
 $files = @(
   'README.md',
   'docs/README.md',
-  'docs/architecture.md',
-  'docs/ubuntu-deployment.md',
+  'docs/reference/architecture.md',
+  'docs/guides/ubuntu-deployment.md',
   'docs/project-handoff.md'
 )
 Select-String -LiteralPath $files -Pattern '192\.168\.|/home/[^/<]+/services|\b[a-z][a-z0-9_-]*@192\.168\.'

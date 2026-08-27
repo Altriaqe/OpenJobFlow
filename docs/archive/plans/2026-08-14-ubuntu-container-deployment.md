@@ -434,7 +434,7 @@ Expected: no whitespace errors and no existing user changes are removed.
 **Files:**
 - Modify: `compose.yaml`
 - Modify: `.env.example`
-- Create: `docs/ubuntu-deployment.md`
+- Create: `docs/guides/ubuntu-deployment.md`
 
 **Interfaces:**
 - Produces: `docker-compose run --rm migrate`
@@ -554,7 +554,7 @@ Expected: the first command exits `0`; the second lists `postgres`, `migrate`, `
 
 - [ ] **Step 4: Write the Ubuntu runbook**
 
-Create `docs/ubuntu-deployment.md` with these exact operational sections and commands:
+Create `docs/guides/ubuntu-deployment.md` with these exact operational sections and commands:
 
 ````markdown
 # Ubuntu 局域网部署
@@ -613,7 +613,7 @@ Expected: the build exits `0`; without `--profile tools`, only `postgres` and `a
 Run:
 
 ```cmd
-git diff --check -- compose.yaml .env.example docs/ubuntu-deployment.md
+git diff --check -- compose.yaml .env.example docs/guides/ubuntu-deployment.md
 git status --short
 ```
 
@@ -692,7 +692,7 @@ Required user instruction: an explicit request such as “提交部署改动”.
 Run only after authorization:
 
 ```cmd
-git add Dockerfile .dockerignore compose.yaml docs/ubuntu-deployment.md docs/superpowers/specs/2026-08-14-ubuntu-container-deployment-design.md docs/superpowers/plans/2026-08-14-ubuntu-container-deployment.md src/jobflow/cli.py src/jobflow/api/dependencies.py src/jobflow/api/health.py src/jobflow/api/analytics.py tests/test_cli.py tests/api/test_health.py
+git add Dockerfile .dockerignore compose.yaml docs/guides/ubuntu-deployment.md docs/archive/specs/2026-08-14-ubuntu-container-deployment-design.md docs/archive/plans/2026-08-14-ubuntu-container-deployment.md src/jobflow/cli.py src/jobflow/api/dependencies.py src/jobflow/api/health.py src/jobflow/api/analytics.py tests/test_cli.py tests/api/test_health.py
 ```
 
 Do not stage `.env.example` or `src/jobflow/api/app.py` wholesale because both contain unrelated AI/WeCom changes.

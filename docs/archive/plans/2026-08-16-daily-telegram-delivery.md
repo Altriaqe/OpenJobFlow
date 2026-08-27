@@ -37,7 +37,7 @@
 - Create: `ops/daily_update.sh` — 从真实验收后的 Ubuntu 脚本同步回仓库，作为 clone 用户的版本化来源。
 - Create: `tests/ops/test_daily_update_script.py` — 静态验证发送顺序、query 模式和敏感值边界。
 - Modify: `README.md` — 更新自动 Telegram 状态、五分钟验收和维护流程。
-- Modify: `docs/ubuntu-deployment.md` — 记录 service/timer、临时测试与日志验收。
+- Modify: `docs/guides/ubuntu-deployment.md` — 记录 service/timer、临时测试与日志验收。
 - Modify: `docs/project-handoff.md` — 更新当前实际停点和未完成边界。
 - Modify: `<PRIVATE_JOBFLOW_KB_ROOT>\知识卡片\systemd Service 与 Timer 小白指南.md` — 记录 transient timer 和失败状态。
 - Modify: `<PRIVATE_JOBFLOW_KB_ROOT>\知识卡片\Telegram Bot 私聊推送.md` — 记录自动发送链路。
@@ -433,7 +433,7 @@ Expected: formal timer is still `enabled`, `active (waiting)`, and scheduled for
 **Files:**
 - Create: `ops/daily_update.sh`
 - Modify: `README.md`
-- Modify: `docs/ubuntu-deployment.md`
+- Modify: `docs/guides/ubuntu-deployment.md`
 - Modify: `docs/project-handoff.md`
 - Modify relevant Obsidian cards listed in File Structure.
 
@@ -516,7 +516,7 @@ Run:
 ```powershell
 git diff --check
 git status --short --branch
-git diff -- README.md docs/ubuntu-deployment.md docs/project-handoff.md ops/daily_update.sh tests/ops/test_daily_update_script.py
+git diff -- README.md docs/guides/ubuntu-deployment.md docs/project-handoff.md ops/daily_update.sh tests/ops/test_daily_update_script.py
 ```
 
 Expected: no `.env`, snapshot, Profile, Token, Chat ID, password or server backup appears. Existing unrelated user changes remain untouched.

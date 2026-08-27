@@ -124,8 +124,8 @@ Expected: tests pass；两种 Compose 模式均退出 0。
 
 **Files:**
 - Modify: `README.md`
-- Modify: `docs/ubuntu-deployment.md`
-- Modify: `docs/architecture.md`
+- Modify: `docs/guides/ubuntu-deployment.md`
+- Modify: `docs/reference/architecture.md`
 - Modify: `docs/project-handoff.md`
 - Modify: `docs/README.md`
 

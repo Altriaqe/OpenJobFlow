@@ -58,7 +58,7 @@ mkdir -p runtime
 APP_UID="$(docker compose run --rm --entrypoint id api -u)"
 APP_GID="$(docker compose run --rm --entrypoint id api -g)"
 sudo chown "$APP_UID:$APP_GID" runtime
-chmod 755 runtime
+sudo chmod 755 runtime
 docker compose run --rm migrate
 docker compose up -d api
 docker compose ps
@@ -98,6 +98,8 @@ find "runtime/reports/$(date +%F)/wechat" -maxdepth 1 -type f -printf '%f\n' | s
 ```
 
 预期包含：`article.md`、`article.html`、`manifest.json`、`trend.png`。
+
+新生成的 `wechat` 目录权限应为 `0755`，四个文件权限应为 `0644`。宿主机普通用户应能直接执行上述 `find` 命令，不需要 `sudo`；历史文章包需要重新生成后才会获得新权限。
 
 ## 状态和恢复
 

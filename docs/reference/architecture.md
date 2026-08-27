@@ -175,4 +175,4 @@ Ubuntu 本机与 Windows 局域网客户端均通过健康检查、就绪检查�
 - 密钥和真实数据不进入 Git、镜像、日志或文档；
 - 局域网部署完成不等于公网生产上线。
 
-启动和继续开发时先阅读 [`project-handoff.md`](project-handoff.md)。
+启动和继续开发时先阅读 [`project-handoff.md`](../project-handoff.md)。

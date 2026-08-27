@@ -192,6 +192,11 @@ def write_wechat_article(
             + "\n",
             encoding="utf-8",
         )
+        # mkdtemp 默认创建 0700 目录；显式开放只读权限，方便宿主机维护者
+        # 直接检查和复制文章包，同时保留只有容器用户可以修改的边界。
+        for filename in manifest.files:
+            (temp_dir / filename).chmod(0o644)
+        temp_dir.chmod(0o755)
         if output_dir.exists():
             backup_dir = Path(tempfile.mkdtemp(prefix="wechat-previous-", dir=output_dir.parent))
             backup_dir.rmdir()

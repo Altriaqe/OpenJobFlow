@@ -100,7 +100,7 @@ License / 许可证
 Documentation / 详细文档
 ```
 
-服务器 systemd、VNC、Mihomo 和恢复操作只在 README 中提供概览，并链接 `docs/ubuntu-deployment.md`。完整命令不重复复制到首页。
+服务器 systemd、VNC、Mihomo 和恢复操作只在 README 中提供概览，并链接 `docs/guides/ubuntu-deployment.md`。完整命令不重复复制到首页。
 
 ## 6. 默认复现路径
 
@@ -255,7 +255,7 @@ ops          Ubuntu 每日任务编排
 - 自动采集器是独立项目，不随 JobFlow 发布；
 - 使用者必须自行提供合法授权的采集器并人工处理登录与平台安全验证；
 - JobFlow 不提供绕过验证码、风控、登录限制或访问控制的能力；
-- README 只展示 Ubuntu 部署概览，详细操作链接 `docs/ubuntu-deployment.md`。
+- README 只展示 Ubuntu 部署概览，详细操作链接 `docs/guides/ubuntu-deployment.md`。
 
 ### 10.4 网络代理
 

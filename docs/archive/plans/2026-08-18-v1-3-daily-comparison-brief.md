@@ -57,7 +57,7 @@
 - `src/jobflow/api/reports.py` — add protected daily report status/send endpoints while preserving `/reports/cities/send`.
 - `ops/daily_update.sh` — expand to three pages, deduplicate merged jobs, resume existing delivery, and call the daily endpoint.
 - Existing tests beside every modified module.
-- `README.md`, `docs/architecture.md`, `docs/project-handoff.md`, and `docs/ubuntu-deployment.md` only after real implementation evidence exists.
+- `README.md`, `docs/reference/architecture.md`, `docs/project-handoff.md`, and `docs/guides/ubuntu-deployment.md` only after real implementation evidence exists.
 
 ---
 
@@ -1539,9 +1539,9 @@ git commit -m "feat: audit and safely backfill snapshots"
 **Files:**
 
 - Modify after evidence: `README.md`
-- Modify after evidence: `docs/architecture.md`
+- Modify after evidence: `docs/reference/architecture.md`
 - Modify after evidence: `docs/project-handoff.md`
-- Modify after evidence: `docs/ubuntu-deployment.md`
+- Modify after evidence: `docs/guides/ubuntu-deployment.md`
 - Update after completion: `<KNOWLEDGE_VAULT>` using its established daily-note and knowledge-card structure.
 
 **Interfaces:**
@@ -1666,7 +1666,7 @@ Search all changed Markdown for actual tokens, keys, subscriptions, passwords, w
 - [ ] **Step 12: Approval-gated final documentation commit**
 
 ```powershell
-git add README.md docs/architecture.md docs/project-handoff.md docs/ubuntu-deployment.md docs/superpowers/specs/2026-08-18-v1-3-daily-comparison-brief-design.md docs/superpowers/plans/2026-08-18-v1-3-daily-comparison-brief.md
+git add README.md docs/reference/architecture.md docs/project-handoff.md docs/guides/ubuntu-deployment.md docs/archive/specs/2026-08-18-v1-3-daily-comparison-brief-design.md docs/archive/plans/2026-08-18-v1-3-daily-comparison-brief.md
 git commit -m "docs: document JobFlow V1.3 operations"
 ```
 
