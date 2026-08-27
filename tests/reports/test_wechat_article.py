@@ -15,6 +15,7 @@ from jobflow.models.snapshot import (
 from jobflow.reports.wechat_article import (
     KeywordNewJobs,
     WechatArticleData,
+    _requirement_labels,
     build_article_data,
     write_wechat_article,
 )
@@ -46,6 +47,23 @@ def posting(
         skills=skills,
         detail_url=detail_url,
     )
+
+
+@pytest.mark.parametrize(
+    ("skills", "expected"),
+    [
+        (("Java", "统招本科", "Spring"), ("本科", "Java、Spring")),
+        (("Java", "Spring"), ("未注明", "Java、Spring")),
+        (("统招本科",), ("本科", "暂无明确技能标签")),
+        (("本科", "硕士", "Python"), ("本科", "Python")),
+        (("  ", "Python"), ("未注明", "Python")),
+    ],
+)
+def test_requirement_labels_extract_education_and_filter_skills(
+    skills: tuple[str, ...],
+    expected: tuple[str, str],
+) -> None:
+    assert _requirement_labels(posting("requirements", skills=skills)) == expected
 
 
 def sample_data() -> WechatArticleData:
@@ -104,6 +122,38 @@ def test_html_has_no_script_remote_resource_or_sensitive_fields(tmp_path):
     assert "暂无明确技能标签" in html
     assert "薪资面议" in html
     assert 'src="trend.png"' in html
+    assert html.count("学历要求：未注明") == 3
+
+
+def test_markdown_and_html_render_education_without_repeating_skill_tag(tmp_path):
+    data = sample_data()
+    groups = (
+        KeywordNewJobs(
+            "AI Agent",
+            (posting("education", skills=("Java", "统招本科", "Spring")),),
+        ),
+        KeywordNewJobs("Python开发", None),
+    )
+    data = WechatArticleData(
+        data.report_date,
+        data.city_count,
+        data.pages_per_city,
+        data.keyword_rows,
+        data.city_advantages,
+        data.weekly_summary,
+        groups,
+    )
+
+    write_wechat_article(data, PNG, COVER, tmp_path / "wechat")
+    markdown = (tmp_path / "wechat" / "article.md").read_text(encoding="utf-8")
+    document = (tmp_path / "wechat" / "article.html").read_text(encoding="utf-8")
+
+    assert "学历要求：本科" in markdown
+    assert "技能要求：Java、Spring" in markdown
+    assert "学历要求：本科" in document
+    assert "技能要求：Java、Spring" in document
+    assert "技能要求：Java、统招本科、Spring" not in markdown
+    assert "技能要求：Java、统招本科、Spring" not in document
 
 
 def test_invalid_image_is_rejected(tmp_path):

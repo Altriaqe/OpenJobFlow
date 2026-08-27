@@ -158,9 +158,32 @@ def _salary_label(posting: NewJobPosting) -> str:
     )
 
 
-def _skills_label(posting: NewJobPosting) -> str:
-    values = tuple(skill.strip() for skill in posting.skills if skill.strip())
-    return "、".join(values) if values else "暂无明确技能标签"
+_EDUCATION_LABELS = ("学历不限", "中专", "高中", "大专", "本科", "硕士", "博士")
+
+
+def _education_label(value: str) -> str | None:
+    """把包含明确学历词的岗位标签规范化为学历显示值。"""
+    for label in _EDUCATION_LABELS:
+        if label in value:
+            return label
+    return None
+
+
+def _requirement_labels(posting: NewJobPosting) -> tuple[str, str]:
+    """返回学历要求与移除学历标签后的技能要求。"""
+    education: str | None = None
+    skills: list[str] = []
+    for raw_value in posting.skills:
+        value = raw_value.strip()
+        if not value:
+            continue
+        detected = _education_label(value)
+        if detected is not None:
+            if education is None:
+                education = detected
+            continue
+        skills.append(value)
+    return education or "未注明", "、".join(skills) or "暂无明确技能标签"
 
 
 def _new_job_count(data: WechatArticleData) -> int:
@@ -201,6 +224,7 @@ def _build_markdown(data: WechatArticleData) -> str:
             continue
         lines.extend([f"### {group.keyword} · 新增 {len(group.postings)} 个", ""])
         for posting in _sorted_postings(group.postings):
+            education_label, skills_label = _requirement_labels(posting)
             lines.extend(
                 [
                     f"#### {posting.title}　{_salary_label(posting)}",
@@ -209,7 +233,9 @@ def _build_markdown(data: WechatArticleData) -> str:
                     "",
                     f"工作地点：{posting.city}",
                     "",
-                    f"技能要求：{_skills_label(posting)}",
+                    f"学历要求：{education_label}",
+                    "",
+                    f"技能要求：{skills_label}",
                 ]
             )
             if posting.detail_url:
@@ -247,6 +273,7 @@ def _build_html(data: WechatArticleData) -> str:
                 link = (
                     f'<a href="{url}" target="_blank" rel="noopener noreferrer">查看岗位详情 →</a>'
                 )
+            education_label, skills_label = _requirement_labels(posting)
             cards.append(
                 '<article class="job-card">'
                 '<div class="job-heading">'
@@ -255,7 +282,8 @@ def _build_html(data: WechatArticleData) -> str:
                 "</div>"
                 f'<p class="company">{html.escape(posting.company)}</p>'
                 f"<p>工作地点：{html.escape(posting.city)}</p>"
-                f"<p>技能要求：{html.escape(_skills_label(posting))}</p>"
+                f"<p>学历要求：{html.escape(education_label)}</p>"
+                f"<p>技能要求：{html.escape(skills_label)}</p>"
                 f"{link}</article>"
             )
         groups.append(
