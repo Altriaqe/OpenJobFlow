@@ -5,6 +5,7 @@ __pycache__/
 .pytest_tmp/
 .ruff_cache/
 .mypy_cache/
+.superpowers/
 
 # Virtual environments and local configuration
 .venv/

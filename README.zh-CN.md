@@ -2,6 +2,10 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
+<p align="center">
+  <img src="docs/assets/openjobflow-logo.png" alt="OpenJobFlow Logo" width="180">
+</p>
+
 > 一个开源招聘数据智能流水线和轻量级 AI 数据平台，将合规 JSON 快照转换为 PostgreSQL 分层数据、只读分析 API、趋势简报和可选消息推送。
 
 ![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)

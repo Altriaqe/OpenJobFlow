@@ -2,6 +2,10 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
+<p align="center">
+  <img src="docs/assets/openjobflow-logo.png" alt="OpenJobFlow Logo" width="180">
+</p>
+
 > An open-source recruitment intelligence pipeline and lightweight AI data platform that turns compliant JSON snapshots into layered PostgreSQL data, read-only analytics APIs, trend briefs, and optional message delivery.
 
 ![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
