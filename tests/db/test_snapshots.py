@@ -271,6 +271,7 @@ def test_list_new_job_postings_uses_identity_diff_and_core_detail_url() -> None:
     normalized = " ".join(sql.split())
     assert "LEFT JOIN core.job_snapshot_items AS previous" in normalized
     assert "LEFT JOIN core.jobs AS jobs" in normalized
+    assert "snapshot.status = 'succeeded'" in normalized
     assert "previous.source IS NULL" in normalized
     assert params == (19, 20, "AI Agent")
     assert result[0].identity == ("boss_zhipin", "job-2")

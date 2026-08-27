@@ -186,6 +186,7 @@ def list_new_job_postings(
           ON snapshot.id = current.snapshot_id
         WHERE current.snapshot_id = %s
           AND snapshot.search_keyword = %s
+          AND snapshot.status = 'succeeded'
           AND previous.source IS NULL
         ORDER BY current.city, current.title, current.external_id, current.source
         """,
