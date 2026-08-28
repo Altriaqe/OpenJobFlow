@@ -45,17 +45,24 @@ JobFlow is intended for learning, research, personal technical practice, and sma
 
 ```mermaid
 flowchart LR
-    A["Compliant JSON snapshot"] --> B["Source Adapter<br/>validate and normalize"]
+    T["systemd timer"] --> W["daily_update.sh"]
+    W --> A["Compliant JSON snapshot"]
+    A --> B["Source Adapter<br/>validate and normalize"]
     B --> C["ETL Worker<br/>transaction boundary"]
     C --> D["PostgreSQL<br/>ops / raw / core / mart"]
     D --> E["FastAPI<br/>fixed read-only analytics"]
     E --> F["Query report<br/>no AI key"]
     E --> G["Optional AI summary<br/>OpenAI-compatible"]
-    F --> H["Optional Telegram delivery"]
+    F --> H["Telegram<br/>automatic delivery"]
     G --> H
+    F --> I["WeChat test account<br/>automatic template summary"]
+    G --> I
+    I --> J["Reviewable article package"]
+    J --> K["Windows download helper<br/>download and validate"]
+    K --> L["Manual review and<br/>Official Account publishing"]
 ```
 
-The AI layer does not connect directly to PostgreSQL and cannot execute arbitrary SQL. It only receives the structured results returned by fixed application queries. Delivery channels do not participate in collection, normalization, or database writes.
+The AI layer does not connect directly to PostgreSQL and cannot execute arbitrary SQL. It only receives the structured results returned by fixed application queries. Delivery channels do not participate in collection, normalization, or database writes. Telegram and the WeChat test account are automatic delivery branches. The formal Official Account path remains manual: the server generates an article package, the Windows helper downloads and validates it, and an operator reviews and publishes it.
 
 ## Quick Start
 

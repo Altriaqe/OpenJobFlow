@@ -45,17 +45,24 @@ JobFlow 面向学习、研究、个人技术实践和小型自托管分析。它
 
 ```mermaid
 flowchart LR
-    A["合规 JSON 快照"] --> B["Source Adapter<br/>校验与标准化"]
+    T["systemd timer 定时器"] --> W["daily_update.sh 每日脚本"]
+    W --> A["合规 JSON 快照"]
+    A --> B["Source Adapter<br/>校验与标准化"]
     B --> C["ETL Worker<br/>事务边界"]
     C --> D["PostgreSQL<br/>ops / raw / core / mart"]
     D --> E["FastAPI<br/>固定只读分析"]
     E --> F["查询简报<br/>无需 AI Key"]
     E --> G["可选 AI 总结<br/>OpenAI-compatible"]
-    F --> H["可选 Telegram 推送"]
+    F --> H["Telegram<br/>自动发送"]
     G --> H
+    F --> I["微信测试号<br/>自动模板摘要"]
+    G --> I
+    I --> J["可审核公众号文章包"]
+    J --> K["Windows 下载工具<br/>下载并校验"]
+    K --> L["人工审核与<br/>正式公众号发布"]
 ```
 
-AI 层不直接连接 PostgreSQL，也不能执行任意 SQL；它只接收固定应用查询返回的结构化结果。消息渠道不参与采集、标准化或数据库写入。
+AI 层不直接连接 PostgreSQL，也不能执行任意 SQL；它只接收固定应用查询返回的结构化结果。消息渠道不参与采集、标准化或数据库写入。Telegram 和微信测试号属于自动发送分支；正式公众号仍采用人工流程：服务器生成文章包，Windows 工具下载并校验，维护者审核后发布。
 
 ## 10 分钟 Docker 复现
 

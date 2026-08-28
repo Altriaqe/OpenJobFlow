@@ -7,6 +7,12 @@ JobFlow 的主线是招聘数据 ETL 与只读分析。数据源、写入、查�
 ## 当前架构
 
 ```text
+systemd timer
+                    │
+                    ▼
+              daily_update.sh
+                    │
+                    ▼
 Ubuntu Chrome CDP / 本地快照 / 后续合规动态数据源
                     │
                     ▼
@@ -39,17 +45,20 @@ Ubuntu Chrome CDP / 本地快照 / 后续合规动态数据源
           ┌─────────┴─────────┐
           ▼                   ▼
    Telegram Bot 私聊      微信测试号模板
-   文字 + PNG             聚合摘要
+   自动文字 + PNG          自动聚合摘要
                               │
                               ▼
                    公众号文章排版包
                  Markdown / HTML / PNG
                               │
                               ▼
-                   正式订阅号人工发布
+                 Windows 下载工具校验
+                               │
+                               ▼
+                   正式订阅号人工审核发布
 ```
 
-每日 Shell 在 ETL 和文章包生成完成后并行触发 Telegram、微信两个渠道。渠道状态独立记录：同一渠道同一天只能成功认领一次，某个渠道失败不会阻止另一个渠道尝试。
+systemd timer 按计划启动每日 Shell。每日 Shell 在采集、ETL 和文章包生成完成后并行触发 Telegram、微信两个自动渠道。渠道状态独立记录：同一渠道同一天只能成功认领一次，某个渠道失败不会阻止另一个渠道尝试。正式公众号不走自动 API 发布，而是由 Windows 工具下载并校验文章包，再由维护者人工审核和发布。
 
 网络受限的部署环境可以通过 `JOBFLOW_HTTP_PROXY`、`JOBFLOW_HTTPS_PROXY` 和 `JOBFLOW_NO_PROXY` 为应用容器提供外联代理。代理客户端、节点和订阅属于部署环境，不属于 JobFlow 业务架构，也不进入公开仓库。
 
