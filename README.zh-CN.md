@@ -37,6 +37,7 @@ JobFlow 面向学习、研究、个人技术实践和小型自托管分析。它
 - 可通过 OpenAI-compatible API 总结固定的结构化指标。
 - 可通过 Telegram Bot API 发送文字与图表。
 - 可通过微信测试号发送聚合模板摘要，并生成供人工检查发布的公众号文章排版包。
+- 提供可移植的 Windows CMD/PowerShell 工具，在本机下载并校验公众号文章包，同时保持配置和发布决策私有。
 - 提供带保护逻辑的 Bash 每日工作流，运维者可使用自行审查的 systemd unit 调度。
 - 包含 Pytest 契约测试和 PostgreSQL 集成测试，并使用 Ruff 保证代码质量。
 
@@ -271,6 +272,8 @@ Authorization: Bearer <YOUR_REPORT_TRIGGER_TOKEN>
 
 V1.3.2 增加可选的微信测试号模板摘要，以及由 `Markdown`、静态 `HTML`、`PNG` 和清单组成的公众号文章排版包。该功能默认关闭，只包含固定范围聚合样本，与 Telegram 独立运行。正式个人订阅号首版采用人工检查和发布。配置与服务器验收步骤参见[微信测试号配置指南](docs/guides/wechat-test-account.md)。
 
+V1.3.4 增加供自托管运维者使用的 Windows 一键拉取工具。它从本机环境变量或命令参数读取每台电脑自己的 SSH 配置，下载一份已经生成的文章包，校验清单和六个文件，但不自动填写标题、作者，也不自动发布。使用方法见 [Windows 公众号文章包下载指南](docs/guides/wechat-article-download.md)。
+
 ## Ubuntu 部署
 
 对于长期运行的自托管部署，高层流程如下：
@@ -385,6 +388,7 @@ JobFlow 自有代码和文档依据 [MIT License](LICENSE) 发布，版权归 20
 
 - [文档索引](docs/README.md)
 - [微信测试号配置指南](docs/guides/wechat-test-account.md)
+- [Windows 公众号文章包下载指南](docs/guides/wechat-article-download.md)
 - [架构与实现状态](docs/reference/architecture.md)
 - [Ubuntu 部署与运维](docs/guides/ubuntu-deployment.md)
 - [数据源与合规边界](docs/reference/data-sources.md)

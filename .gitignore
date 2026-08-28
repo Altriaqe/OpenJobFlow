@@ -28,6 +28,7 @@ Thumbs.db
 # Runtime output and collected data
 logs/
 runtime/
+downloads/
 data/raw/
 data/processed/
 *.log

@@ -12,6 +12,7 @@
 
 - [`guides/ubuntu-deployment.md`](guides/ubuntu-deployment.md)：Ubuntu 从拉取代码到启动、ETL、验证和停机的运行手册。
 - [`guides/wechat-test-account.md`](guides/wechat-test-account.md)：微信测试号配置、Migration、手动验收和安全恢复。
+- [`guides/wechat-article-download.md`](guides/wechat-article-download.md)：Windows 一键拉取、校验和整理公众号文章包，发布仍由人工确认。
 
 根目录 README 面向公开用户，提供从合规 JSON 快照开始的最短可运行路径；`guides/` 提供更完整的部署和外部渠道验收步骤。
 

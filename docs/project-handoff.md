@@ -1,33 +1,31 @@
 # JobFlow 项目当前状态与开发交接
 
-更新日期：2026-08-27
+更新日期：2026-08-28
 
 这份文档是上下文压缩、新对话、换电脑或暂停开发后的第一入口。继续开发前先读取本文件，再用代码、测试、Git 和服务器实际输出确认可能变化的状态。
 
-## 0. 2026-08-27 当前停点
+## 0. 2026-08-28 当前停点（V1.3.4）
 
-V1.3.3“微信每日新增岗位公告”已通过 PR #2 合并到 `main`。当前实现按
-`source + external_id` 计算同关键词前日差集，生成 `article.md`、
-`article.html`、`cover.png`、`trend.png` 和 `manifest.json`，正式每日脚本保持
-Telegram 自动发送，微信侧改为只生成文章包并等待人工发布。V1.3.2 测试号接口继续保留供手动回归。
+V1.3.3“微信每日新增岗位公告”已完成两次正式个人订阅号发布。V1.3.4 增加 Windows 一键拉取工具：公众号文章继续由 Ubuntu 真实快照生成，Telegram 仍按原链路自动发送；Windows 工具只负责下载、校验和整理文章包，维护者继续人工导入、预览并发布。V1.3.2 测试号接口保留供手动回归。
 
-当前只完成代码合并与本机测试，不代表生产验收。Ubuntu 真实快照生成、五件套权限复核、正式公众号后台人工发布和手机端链接检查仍待用户执行；本机与远程 `main` 已同步到合并提交 `b296f82`，尚未部署。
-
-V1.3.2 已在 Ubuntu 完成 Telegram 与微信公众号测试号正式定时首轮验收。当前代码与 Git 停点为：
+当前代码与 Git 停点为：
 
 ```text
 仓库：Altriaqe/OpenJobFlow
 本机目录：<LOCAL_JOBFLOW_DIR>
-稳定分支 main / origin/main：b296f82 PR #2 合并提交
-已合并分支：bugfix/wechat-article-permissions、feature/wechat-daily-new-jobs-article
-PR：#1、#2 已合并并关闭
+稳定分支 main / origin/main：32c16ae
+最新提交：优化微信公众号岗位公告与明文链接
+离线回归：338 passed，1 skipped，1 warning
+Ruff：通过
 Ubuntu 项目目录：<JOBFLOW_DIR>
-Ubuntu main / origin/main：416b739
+Ubuntu main / origin/main：32c16ae
 ```
 
-Ubuntu 已完成 Migration 008/009、V1.3.2 镜像构建和 API 重启，验证 `/health=ok`、`/ready=ready`、PostgreSQL healthy、Mihomo running。微信五个配置变量均已在服务器私有 `.env` 中设置，但实际值不得进入 Git、文档、截图或聊天。
+Ubuntu 已拉取 `32c16ae` 并重建 API，容器显示 `healthy`，`/health=ok`、`/ready=ready`。2026-08-28 凌晨尚无当天 09:00 快照，因此用最近完整的 `2026-08-27` 四关键词快照生成文章，接口返回 `generated`、`new_job_count=247`、`baseline_ready=true`。
 
-2026-08-27 使用 `2026-08-26` 的四关键词快照完成真实微信测试号验收：接口返回 `sent`，手机收到 `JobFlow 日报`，文章包包含 `article.md`、`article.html`、`manifest.json`、`trend.png`。随后 PR #1 合并并由 Ubuntu 拉取部署；API `/health=ok`、`/ready=ready`，文章目录 `0755`、四个文件 `0644`。正式 systemd timer 为 `enabled`、`active (waiting)`，用户确认 Telegram 与微信公众号均正常收到本次定时日报。
+2026-08-28 09:00 正式任务于 09:14:52 成功结束，service 为 `status=0/SUCCESS`；微信文章状态 `generated`、新增岗位 256、基线就绪 `True`，Telegram 状态 `sent`。当天 256 岗位文章已由用户确认正式发布。V1.3.4 脚本随后用同一文章包完成真实下载验收。
+
+文章包包含 `article.md`、动态中文导入 Markdown、`article.html`、`cover.png`、`trend.png` 和 `manifest.json`。导入版验证 247 条“岗位原始地址（复制后打开）”，旧 Markdown 超链接为 0；保存草稿、手机预览和最终正式发布均由用户确认通过。正文结尾保留数据来源和真实性提醒。
 
 正式 PRD 和实施计划为：
 
@@ -54,19 +52,25 @@ docs/development/plans/2026-08-26-wechat-official-daily-delivery.md
 - Ubuntu 已验证文章目录 `0755`、文件 `0644`，普通用户无需 `sudo` 可读取；
 - 正式 timer 的实时 `enabled/active/next` 已采集，Telegram 与微信公众号正式定时首轮均已实收；
 - `docs/` 已按 `guides`、`reference`、`development`、`operations`、`archive` 重新分类并合并到 `main`。
+- V1.3.3 公众号岗位卡片改用明文原始地址，避免个人公众号保存草稿时清除外部超链接；
+- 真实 `2026-08-27` 公告包含 247 个新增岗位，正式个人订阅号首篇文章已发布；
+- `downloads/` 保存真实发布产物，已加入 `.gitignore`，不得进入公共仓库。
+- V1.3.4 `download-wechat-article.cmd/.ps1` 已兼容 CMD 与 Windows PowerShell 5，一次 SCP 下载后校验 `report_date`、`new_job_count` 和六个文件；目标目录存在时拒绝覆盖；
+- 每台电脑使用自己的环境变量或命令参数，脚本不包含个人用户名、服务器地址、远程路径或密码；
+- 2026-08-28 真实脚本验收输出新增岗位 256、正确中文文件名、建议标题和作者；公开文档测试 12 项与脚本保护测试通过。
 
-下一步是继续观察正式 timer 的连续多日运行，并在每周结束时验收本周与上周对比。自动备份恢复、登录失效通知和公网 HTTPS 仍未完成。当前精确状态仍以 `git status`、`git log` 和服务器实际输出为准。
+下一步是在用户明确授权后提交并推送 V1.3.4；之后继续观察正式 timer 的连续多日运行，并在每周结束时验收本周与上周对比。公众号最终审核与发布仍保持人工确认。自动备份恢复、登录失效通知和公网 HTTPS 仍未完成。
 
 新对话恢复提示词：
 
 ```text
-继续 OpenJobFlow V1.3.2 双渠道定时运行观察。
+继续 OpenJobFlow V1.3.4 Windows 一键拉取文章包工具。
 项目路径：<LOCAL_JOBFLOW_DIR>
 请先阅读 docs/project-handoff.md、
-docs/development/specs/2026-08-27-wechat-article-package-permissions-design.md
-和 docs/development/plans/2026-08-27-wechat-article-package-permissions.md，
+docs/development/specs/2026-08-28-wechat-plain-job-url-design.md
+和 docs/development/plans/2026-08-28-wechat-plain-job-url.md，
 然后检查 git status --short --branch 与 git log -5 --oneline。
-权限修复 PR #1 已合并并部署；下一步观察连续多日运行和周末周对比，不要直接推送 main。
+V1.3.4 脚本已真实拉取 2026-08-28 六文件文章包；先检查未提交差异和测试，不要把 downloads 中的真实文章包加入 Git。
 真实 appsecret、openid 和模板 ID 不得写入 Git。
 ```
 
@@ -180,6 +184,8 @@ Dockerfile      Python 3.12 应用镜像
 | GET | `/analytics/salaries/cities` | 已验收 | 城市月薪统计 |
 | GET | `/analytics/skills` | 已验收 | 热门技能 |
 | POST | `/reports/cities/send` | 已真实验收 | 默认 query 固定简报；`mode=ai` 才调用 OpenAI 模型；最终发送 Telegram 私聊 |
+| POST | `/reports/daily/multi/wechat/article/generate` | 已真实验收 | 从完整四关键词快照生成公众号文章包，不发送 Telegram |
+| GET | `/reports/daily/multi/wechat/article/status` | 已实现 | 返回脱敏文章包状态，不暴露文件路径或凭据 |
 | GET | `/docs` | 已验收 | Swagger UI |
 | GET | `/openapi.json` | 已实现 | OpenAPI 规范 |
 
@@ -355,15 +361,17 @@ scraper Ubuntu：master 基线 2bc40f5，生产脚本已应用未提交兼容补
 
 ## 9. 下一步
 
-### V1.3.2 双渠道运行观察
+### V1.3.4 Windows 一键拉取与人工发布
 
 ```text
-PR #1 已合并并部署
-→ 文章包 0755/0644 已验收
-→ Telegram 与微信公众号正式定时首轮已验收
+32c16ae 已提交、推送并部署
+→ 2026-08-27 完整快照生成 247 个新增岗位公告
+→ 明文岗位地址、草稿保存和手机预览已验收
+→ 正式个人订阅号首篇文章已发布
+→ Windows 一键下载脚本已完成并用 2026-08-28 真实文章包验收
+→ 最终审核与发布继续人工确认
 → 继续记录连续多日运行
 → 每周结束时验证本周与上周对比
-→ 后续独立设计登录失效通知和自动备份恢复
 ```
 
 ### 运行观察
@@ -406,6 +414,9 @@ V1.2 已专用于可选服务器代理；V1.3 已完成的四城市三页范围�
 - 代码实现、离线测试、真实外部联调是三个不同完成层级。
 - 现有 `docker compose run --rm migrate` 会从 001 重放全部 migration；服务器历史数据使旧 Migration 005 的薪资约束失败。本次部署已单独执行 008 恢复正确约束，再执行 009。后续应把 migration runner 改为带版本记录的增量执行，不能把本次手工顺序当作长期方案。
 - V1.3.2 手动微信送达、文章包权限和正式双渠道首轮均已验收；后续仍需连续运行和故障恢复证据。
+- V1.3.3 正式订阅号当前为“服务器自动生成、维护者人工下载与发布”，不是公众号 API 全自动发布。
+- Windows `download-wechat-article.cmd/.ps1` 已真实拉取 2026-08-28 六文件文章包，校验 `new_job_count=256`，兼容 Windows PowerShell 5 中文编码；它只下载和整理，不自动发布。
+- `downloads/` 和 `runtime/` 含真实岗位发布产物，只能留在本地或服务器，不得提交公共仓库。
 
 ## 11. 新对话交接提示词
 

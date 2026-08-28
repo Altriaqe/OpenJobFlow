@@ -37,6 +37,7 @@ JobFlow is intended for learning, research, personal technical practice, and sma
 - Optionally summarizes fixed structured metrics through an OpenAI-compatible API.
 - Optionally sends text and chart output through the Telegram Bot API.
 - Optionally sends an aggregate template summary through a WeChat test account and generates a reviewable article package for manual Official Account publishing.
+- Includes a portable Windows CMD/PowerShell helper that downloads and validates a generated WeChat article package while keeping credentials and publishing decisions local.
 - Provides a guarded Bash daily workflow that operators can schedule with their own reviewed systemd units.
 - Includes Pytest contracts and PostgreSQL integration tests, with Ruff for code quality.
 
@@ -271,6 +272,8 @@ Database ETL and external message delivery have separate failure boundaries: a T
 
 V1.3.2 adds an optional WeChat test-account template channel and a local article package (`Markdown`, static `HTML`, `PNG`, and manifest). It is disabled by default, contains aggregate fixed-scope samples only, and runs independently from Telegram. Formal personal subscription accounts use manual review and publishing in the first version. See the [WeChat test-account setup guide](docs/guides/wechat-test-account.md) for configuration and server acceptance steps.
 
+V1.3.4 adds an optional Windows download helper for self-hosted operators. It reads machine-specific SSH settings from local environment variables or command-line parameters, downloads one generated package, validates its manifest and required files, and leaves title, author, preview, and publishing under manual control. See the [Windows article-package download guide](docs/guides/wechat-article-download.md).
+
 ## Ubuntu Deployment
 
 For an always-on self-hosted deployment, the high-level path is:
@@ -385,6 +388,7 @@ This license does not cover third-party recruitment data, websites, content, tra
 
 - [Documentation index](docs/README.md)
 - [WeChat test-account setup](docs/guides/wechat-test-account.md)
+- [Windows WeChat article-package download helper](docs/guides/wechat-article-download.md)
 - [Architecture and implementation status](docs/reference/architecture.md)
 - [Ubuntu deployment and operations](docs/guides/ubuntu-deployment.md)
 - [Data sources and compliance boundary](docs/reference/data-sources.md)
