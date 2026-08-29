@@ -16,7 +16,7 @@ from jobflow.channels.wechat_official import (
 
 @dataclass(frozen=True)
 class UploadedWechatImage:
-    media_id: str
+    media_id: str | None = None
     url: str | None = None
 
 
@@ -51,9 +51,15 @@ def upload_image(
         raise WechatDeliveryError("WeChat image upload rejected")
     media_id = payload.get("media_id")
     url = payload.get("url")
-    if not isinstance(media_id, str) or not media_id:
-        raise WechatDeliveryError("WeChat image upload response is invalid")
-    return UploadedWechatImage(media_id=media_id, url=url if isinstance(url, str) else None)
+    selected_media_id = media_id if isinstance(media_id, str) and media_id else None
+    selected_url = url if isinstance(url, str) and url else None
+    # 永久素材接口返回 media_id，正文图片接口 uploadimg 返回可嵌入正文的 url；
+    # 两种接口不能用同一个必填字段校验，否则会误判微信的正常响应。
+    if permanent and selected_media_id is None:
+        raise WechatDeliveryError("WeChat permanent image response is invalid")
+    if not permanent and selected_url is None:
+        raise WechatDeliveryError("WeChat article image response is invalid")
+    return UploadedWechatImage(media_id=selected_media_id, url=selected_url)
 
 
 def build_draft_payload(

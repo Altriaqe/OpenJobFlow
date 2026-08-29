@@ -19,16 +19,31 @@ def response(payload, status_code=200):
     return result
 
 
-def test_upload_image_returns_media_id_and_url(tmp_path: Path):
+def test_upload_article_image_accepts_url_without_media_id(tmp_path: Path):
     image = tmp_path / "trend.png"
     image.write_bytes(b"png")
-    post = Mock(return_value=response({"errcode": 0, "media_id": "media", "url": "https://wx/image"}))
+    post = Mock(return_value=response({"url": "https://wx/image"}))
 
     uploaded = upload_image(access_token="token", path=image, permanent=False, post=post)
 
-    assert uploaded.media_id == "media"
+    assert uploaded.media_id is None
     assert uploaded.url == "https://wx/image"
     assert post.call_args.kwargs["files"]["media"][0] == "trend.png"
+
+
+def test_upload_permanent_image_requires_media_id(tmp_path: Path):
+    image = tmp_path / "cover.png"
+    image.write_bytes(b"png")
+
+    uploaded = upload_image(
+        access_token="token",
+        path=image,
+        permanent=True,
+        post=Mock(return_value=response({"media_id": "cover-media"})),
+    )
+
+    assert uploaded.media_id == "cover-media"
+    assert uploaded.url is None
 
 
 def test_build_payload_replaces_local_trend_image():

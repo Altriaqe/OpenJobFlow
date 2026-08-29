@@ -36,7 +36,10 @@ def test_create_draft_uploads_images_and_records(monkeypatch, tmp_path):
     monkeypatch.setattr("jobflow.reports.wechat_draft_service.get_wechat_access_token", lambda: "token")
     monkeypatch.setattr(
         "jobflow.reports.wechat_draft_service.upload_image",
-        lambda **kwargs: UploadedWechatImage("cover" if kwargs["permanent"] else "trend", "https://img"),
+        lambda **kwargs: UploadedWechatImage(
+            "cover" if kwargs["permanent"] else None,
+            None if kwargs["permanent"] else "https://img",
+        ),
     )
     monkeypatch.setattr("jobflow.reports.wechat_draft_service.create_draft", lambda **kwargs: "draft")
     monkeypatch.setattr("jobflow.reports.wechat_draft_service.record_wechat_draft_created", lambda *a, **k: calls.append(k))
@@ -49,6 +52,7 @@ def test_create_draft_uploads_images_and_records(monkeypatch, tmp_path):
     assert result.status == "created"
     assert result.has_draft is True
     assert calls[0]["draft_media_id"] == "draft"
+    assert calls[0]["trend_media_id"] is None
 
 
 def test_invalid_package_is_recorded_without_network(monkeypatch, tmp_path):

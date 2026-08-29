@@ -36,7 +36,7 @@ def record_wechat_draft_created(
     report_date: date,
     draft_media_id: str,
     cover_media_id: str,
-    trend_media_id: str,
+    trend_media_id: str | None,
 ) -> None:
     """记录微信已接受草稿，ID 只作为平台标识保存。"""
     connection.cursor().execute(
