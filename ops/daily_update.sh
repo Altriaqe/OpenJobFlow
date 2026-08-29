@@ -229,6 +229,41 @@ print(
 PY
 }
 
+create_wechat_draft() {
+    local snapshot_date="$1"
+
+    docker compose exec -T api python - "$snapshot_date" <<'PY'
+import json
+import os
+import sys
+import urllib.error
+import urllib.request
+
+token = os.getenv("REPORT_TRIGGER_TOKEN")
+if not token:
+    print("微信草稿接口调用失败：缺少触发凭据", file=sys.stderr)
+    raise SystemExit(1)
+
+snapshot_date = sys.argv[1]
+request = urllib.request.Request(
+    f"http://127.0.0.1:8000/reports/daily/multi/wechat/draft/create?snapshot_date={snapshot_date}",
+    method="POST",
+    headers={"Authorization": f"Bearer {token}"},
+)
+try:
+    with urllib.request.urlopen(request, timeout=120) as response:
+        payload = json.load(response)
+except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
+    print(f"微信草稿接口调用失败：{type(exc).__name__}", file=sys.stderr)
+    raise SystemExit(1) from None
+
+if not isinstance(payload, dict):
+    print("微信草稿接口返回无效", file=sys.stderr)
+    raise SystemExit(1)
+print(f"微信草稿状态：{payload.get('status')}，已创建={payload.get('has_draft')}")
+PY
+}
+
 merge_keyword_files() {
     local keyword_index="$1"
     local keyword_dir="$2"
@@ -370,6 +405,13 @@ telegram_status=$?
 wait "$wechat_article_pid"
 wechat_article_status=$?
 set -e
+
+if [[ "$wechat_article_status" -eq 0 ]]; then
+    # 草稿是人工审核入口；失败只记录状态，不回滚文章包，也不影响 Telegram。
+    if ! create_wechat_draft "$SNAPSHOT_DATE"; then
+        echo "微信草稿创建失败，保留文章包并继续" >&2
+    fi
+fi
 
 if [[ "$telegram_status" -ne 0 || "$wechat_article_status" -ne 0 ]]; then
     echo "渠道汇总失败：Telegram=$telegram_status，微信文章=$wechat_article_status" >&2

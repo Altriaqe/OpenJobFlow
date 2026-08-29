@@ -1,6 +1,7 @@
 """日报 HTTP 入口：鉴权后调用报告服务，不在路由层重复统计。"""
 
 import os
+from pathlib import Path
 import secrets
 from datetime import date
 from typing import Literal
@@ -41,6 +42,8 @@ from jobflow.reports.wechat_service import (
     get_wechat_daily_report_status,
     send_wechat_report_from_snapshots,
 )
+from jobflow.reports.wechat_draft_service import create_wechat_draft_from_article
+from jobflow.db.wechat_drafts import get_wechat_draft_status
 
 router = APIRouter(prefix="/reports")
 bearer = HTTPBearer(auto_error=False)
@@ -86,6 +89,14 @@ def get_wechat_article_generator():
 
 def get_wechat_article_status_reader():
     return get_wechat_article_status
+
+
+def get_wechat_draft_creator():
+    return create_wechat_draft_from_article
+
+
+def get_wechat_draft_status_reader():
+    return get_wechat_draft_status
 
 
 def require_report_token(
@@ -321,3 +332,55 @@ def wechat_daily_article_status(
         return status_reader(snapshot_date=snapshot_date)
     except Exception as exc:
         raise HTTPException(status_code=503, detail="report service unavailable") from exc
+
+
+@router.post(
+    "/daily/multi/wechat/draft/create",
+    dependencies=[Depends(require_report_token)],
+)
+def create_wechat_daily_draft(
+    snapshot_date: date,
+    connection=Depends(get_connection),
+    creator=Depends(get_wechat_draft_creator),
+):
+    """从当天文章包创建公众号草稿；失败以安全状态返回，不触发正式发布。"""
+    article_dir = Path("runtime") / "reports" / snapshot_date.isoformat() / "wechat"
+    try:
+        result = creator(
+            connection,
+            report_date=snapshot_date,
+            article_dir=article_dir,
+            author=os.getenv("WECHAT_DRAFT_AUTHOR", "OpenJobFlow"),
+        )
+        return {
+            "snapshot_date": result.snapshot_date.isoformat(),
+            "status": result.status,
+            "has_draft": result.has_draft,
+            "error_code": result.error_code,
+        }
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail="wechat draft request is invalid") from exc
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="wechat draft service unavailable") from exc
+
+
+@router.get(
+    "/daily/multi/wechat/draft/status",
+    dependencies=[Depends(require_report_token)],
+)
+def wechat_daily_draft_status(
+    snapshot_date: date,
+    connection=Depends(get_connection),
+    status_reader=Depends(get_wechat_draft_status_reader),
+):
+    """查询草稿审核状态，只返回日期、状态和脱敏错误码。"""
+    try:
+        status = status_reader(connection, report_date=snapshot_date)
+        return {
+            "snapshot_date": snapshot_date.isoformat(),
+            "status": "pending" if status is None else status.status,
+            "has_draft": status is not None and status.status == "created",
+            "error_code": None if status is None else status.error_code,
+        }
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="wechat draft service unavailable") from exc

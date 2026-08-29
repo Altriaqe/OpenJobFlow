@@ -165,8 +165,8 @@ def test_markdown_uses_official_account_compatible_job_blocks(tmp_path):
     assert "**Python & Agent｜15-30K·16薪**" in markdown
     assert "**<示例>公司**" in markdown
     assert markdown.count("\n---\n") == 2
-    assert "岗位原始地址（复制后打开）：\nhttps://example.test/jobs/1" in markdown
-    assert markdown.count("岗位原始地址（复制后打开）：\nhttps://example.test/jobs/") == 3
+    assert "岗位原始地址（复制后打开）：https://example.test/jobs/1" in markdown
+    assert markdown.count("岗位原始地址（复制后打开）：https://example.test/jobs/") == 3
     assert "[查看岗位详情 →](" not in markdown
     assert markdown.endswith(
         "岗位信息来源于公开招聘页面，仅供学习研究。请以招聘平台原始页面及招聘方实际信息为准。\n"

@@ -257,7 +257,7 @@ def _build_markdown(data: WechatArticleData, *, include_title: bool = True) -> s
                 lines.extend(["", f"学历要求：{education_label}"])
             lines.extend(["", f"技能要求：{skills_label}"])
             if posting.detail_url:
-                lines.extend(["", JOB_URL_LABEL, posting.detail_url])
+                lines.extend(["", f"{JOB_URL_LABEL}{posting.detail_url}"])
             lines.append("")
             if index < len(sorted_postings) - 1:
                 lines.extend(["---", ""])
