@@ -1,6 +1,6 @@
 # Ubuntu 局域网部署与运行手册
 
-更新日期：2026-08-15
+更新日期：2026-08-30
 
 本文记录 JobFlow V1.1 至 V1.3 在 Ubuntu 服务器上的通用部署和运行方式。所有命令使用 Compose v2+ 形式 `docker compose`，不要使用旧版 `docker-compose`。
 
@@ -61,6 +61,8 @@ TELEGRAM_BOT_TOKEN
 TELEGRAM_CHAT_ID
 REPORT_TRIGGER_TOKEN
 ```
+
+接入正式公众号自动草稿时，再在服务器私有 `.env` 配置 `WECHAT_APP_ID`、`WECHAT_APP_SECRET`、可选的 `WECHAT_DRAFT_AUTHOR`，并把 `api.weixin.qq.com` 加入 `JOBFLOW_NO_PROXY`。测试号的 `WECHAT_OPENID`、`WECHAT_TEMPLATE_ID` 与正式公众号草稿不是同一套账号能力。完整步骤见[微信公众号自动草稿配置与排错指南](wechat-official-draft.md)。
 
 使用以下命令限制权限：
 
@@ -344,8 +346,8 @@ sudo systemd-analyze cat-config systemd/logind.conf |
 
 ## 已完成与未完成边界
 
-已完成：Ubuntu 容器构建、migration、PostgreSQL 聚合、API 健康/就绪检查、三个分析接口、Windows 局域网访问、四城市抓取与 ETL、Xvfb/Chrome 长期服务、每日 timer 部署、5 分钟自动触发、Telegram 真实送达、V1.2 Compose 代理迁移、无外部端口验证、真实报告发送、Mihomo 重启后外联复验、笔记本合盖不休眠与 `/ready` 真实验收，以及 Windows 本地机关机后的服务器代理正式定时推送。2026-08-19 进一步完成 V1.3 四城市 × 每城三页、180 条样本、ETL、每日不可变快照、对比简报、城市构成 PNG 和 Telegram 图文真实送达，脚本退出码为 0。
+已完成：Ubuntu 容器构建、migration、PostgreSQL 聚合、API 健康/就绪检查、三个分析接口、Windows 局域网访问、四城市抓取与 ETL、Xvfb/Chrome 长期服务、每日 timer、Telegram 真实送达、V1.2 Compose 代理迁移、笔记本合盖不休眠，以及 V1.3 多关键词每日快照、对比简报和图文推送。V1.3.5 已进一步完成正式公众号 Token、素材上传、UTF-8 正文、内联排版和自动草稿创建的真实验收；正式发布继续人工确认。
 
-未完成：整台 Ubuntu 重启恢复、连续多日运行、登录失效通知、后续版本多关键词与更大抓取范围、公网域名、Caddy、HTTPS、完整鉴权、备份恢复、监控告警。Chrome 151 前台 Target 修复在 Ubuntu 仍是 scraper 工作区补丁；本机修复已提交并创建上游 PR `#68`，但尚未合并。
+未完成：整台 Ubuntu 重启恢复、登录失效通知、公网域名、Caddy、HTTPS、完整鉴权、备份恢复和监控告警。正式公众号仍需人工审核发布，草稿失败或结果不确定时不自动重试。
 
 项目整体上下文与下一步见 [`project-handoff.md`](../project-handoff.md)。

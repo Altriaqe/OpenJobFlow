@@ -1,31 +1,29 @@
 # JobFlow 项目当前状态与开发交接
 
-更新日期：2026-08-28
+更新日期：2026-08-30
 
 这份文档是上下文压缩、新对话、换电脑或暂停开发后的第一入口。继续开发前先读取本文件，再用代码、测试、Git 和服务器实际输出确认可能变化的状态。
 
-## 0. 2026-08-28 当前停点（V1.3.4）
+## 0. 2026-08-30 当前停点（V1.3.5）
 
-V1.3.3“微信每日新增岗位公告”已完成两次正式个人订阅号发布。V1.3.4 增加 Windows 一键拉取工具：公众号文章继续由 Ubuntu 真实快照生成，Telegram 仍按原链路自动发送；Windows 工具只负责下载、校验和整理文章包，维护者继续人工导入、预览并发布。V1.3.2 测试号接口保留供手动回归。
+V1.3.5 已把“服务器生成文章包、Windows 下载、人工导入”升级为“服务器生成文章包、自动创建正式公众号草稿、人工审核发布”。Telegram 仍按原链路自动发送，Windows 下载工具保留为故障兜底，V1.3.2 测试号接口保留供手动回归。
 
 当前代码与 Git 停点为：
 
 ```text
 仓库：Altriaqe/OpenJobFlow
 本机目录：<LOCAL_JOBFLOW_DIR>
-稳定分支 main / origin/main：32c16ae
-最新提交：优化微信公众号岗位公告与明文链接
-离线回归：338 passed，1 skipped，1 warning
-Ruff：通过
+稳定分支 main / origin/main：1e6d192
+最新提交：兼容微信公众号内联标题解析
+离线回归：349 passed，1 skipped，1 warning
+Ruff check：通过
 Ubuntu 项目目录：<JOBFLOW_DIR>
-Ubuntu main / origin/main：32c16ae
+Ubuntu：V1.3.5 正式公众号草稿链路已真实验收，具体 Git ref 继续前需现场复查
 ```
 
-Ubuntu 已拉取 `32c16ae` 并重建 API，容器显示 `healthy`，`/health=ok`、`/ready=ready`。2026-08-28 凌晨尚无当天 09:00 快照，因此用最近完整的 `2026-08-27` 四关键词快照生成文章，接口返回 `generated`、`new_job_count=247`、`baseline_ready=true`。
+正式公众号 AppID/AppSecret 已保存在服务器私有 `.env`，API IP 白名单已配置。`api.weixin.qq.com` 通过 `JOBFLOW_NO_PROXY` 直连，Telegram 继续使用 Mihomo，两个渠道互不改路。Access Token、`draft/count`、封面永久素材、正文趋势图和 `draft/add` 均已真实成功；中文 UTF-8、内联排版和带属性 `<h1>` 标题解析已由用户在公众号后台确认满意。
 
-2026-08-28 09:00 正式任务于 09:14:52 成功结束，service 为 `status=0/SUCCESS`；微信文章状态 `generated`、新增岗位 256、基线就绪 `True`，Telegram 状态 `sent`。当天 256 岗位文章已由用户确认正式发布。V1.3.4 脚本随后用同一文章包完成真实下载验收。
-
-文章包包含 `article.md`、动态中文导入 Markdown、`article.html`、`cover.png`、`trend.png` 和 `manifest.json`。导入版验证 247 条“岗位原始地址（复制后打开）”，旧 Markdown 超链接为 0；保存草稿、手机预览和最终正式发布均由用户确认通过。正文结尾保留数据来源和真实性提醒。
+文章包仍包含 `article.md`、动态中文导入 Markdown、`article.html`、`cover.png`、`trend.png` 和 `manifest.json`。正式链路现在直接读取并校验文章包，上传两类素材后创建待审核草稿。JobFlow 不自动正式发布，不自动重试失败或不确定请求；错误文章仍由维护者在正确公众号后台人工确认和删除。
 
 正式 PRD 和实施计划为：
 
@@ -58,20 +56,24 @@ docs/development/plans/2026-08-26-wechat-official-daily-delivery.md
 - V1.3.4 `download-wechat-article.cmd/.ps1` 已兼容 CMD 与 Windows PowerShell 5，一次 SCP 下载后校验 `report_date`、`new_job_count` 和六个文件；目标目录存在时拒绝覆盖；
 - 每台电脑使用自己的环境变量或命令参数，脚本不包含个人用户名、服务器地址、远程路径或密码；
 - 2026-08-28 真实脚本验收输出新增岗位 256、正确中文文件名、建议标题和作者；公开文档测试 12 项与脚本保护测试通过。
+- V1.3.5 增加 Migration 010、`/wechat/draft/create`、`/wechat/draft/status`、素材上传和按日期幂等状态；
+- 永久封面以 `media_id` 验收，正文图片以 `url` 验收，避免混用接口响应契约；
+- 草稿 JSON 以 `ensure_ascii=False` 编码为 UTF-8，正文使用微信可保留的内联样式，标题正则允许 `<h1>` 属性；
+- 离线非 PostgreSQL 回归为 `349 passed, 1 skipped, 1 warning`，`ruff check src tests`、触及文件格式检查和 `git diff --check` 均通过；本机未加载数据库变量时不把 integration 测试记作通过。
 
-下一步是在用户明确授权后提交并推送 V1.3.4；之后继续观察正式 timer 的连续多日运行，并在每周结束时验收本周与上周对比。公众号最终审核与发布仍保持人工确认。自动备份恢复、登录失效通知和公网 HTTPS 仍未完成。
+下一步是继续观察正式 timer 的连续运行，并在每周结束时验收本周与上周对比。公众号最终审核与发布保持人工确认。自动备份恢复、登录失效通知和公网 HTTPS 仍未完成。
 
 新对话恢复提示词：
 
 ```text
-继续 OpenJobFlow V1.3.4 Windows 一键拉取文章包工具。
+继续 OpenJobFlow V1.3.5 微信公众号自动草稿维护。
 项目路径：<LOCAL_JOBFLOW_DIR>
 请先阅读 docs/project-handoff.md、
-docs/development/specs/2026-08-28-wechat-plain-job-url-design.md
-和 docs/development/plans/2026-08-28-wechat-plain-job-url.md，
+docs/guides/wechat-official-draft.md
+和 docs/reference/architecture.md，
 然后检查 git status --short --branch 与 git log -5 --oneline。
-V1.3.4 脚本已真实拉取 2026-08-28 六文件文章包；先检查未提交差异和测试，不要把 downloads 中的真实文章包加入 Git。
-真实 appsecret、openid 和模板 ID 不得写入 Git。
+正式公众号自动草稿已真实验收；继续前复查服务器 Git、镜像、Migration 010、API 状态和 timer。
+真实 AppID、AppSecret、Token、素材 ID、服务器地址和真实文章包不得写入 Git。
 ```
 
 ## 1. 项目目标
@@ -361,15 +363,16 @@ scraper Ubuntu：master 基线 2bc40f5，生产脚本已应用未提交兼容补
 
 ## 9. 下一步
 
-### V1.3.4 Windows 一键拉取与人工发布
+### V1.3.5 自动创建正式公众号草稿
 
 ```text
-32c16ae 已提交、推送并部署
-→ 2026-08-27 完整快照生成 247 个新增岗位公告
-→ 明文岗位地址、草稿保存和手机预览已验收
-→ 正式个人订阅号首篇文章已发布
-→ Windows 一键下载脚本已完成并用 2026-08-28 真实文章包验收
-→ 最终审核与发布继续人工确认
+文章包生成成功
+→ 上传封面永久素材并取得 media_id
+→ 上传正文趋势图并取得可嵌入 url
+→ 以 UTF-8 JSON 创建正式公众号草稿
+→ 后台中文、内联样式、标题和图片已验收
+→ Windows 一键下载脚本保留为人工兜底
+→ 最终审核与发布继续由人工确认
 → 继续记录连续多日运行
 → 每周结束时验证本周与上周对比
 ```
@@ -414,9 +417,11 @@ V1.2 已专用于可选服务器代理；V1.3 已完成的四城市三页范围�
 - 代码实现、离线测试、真实外部联调是三个不同完成层级。
 - 现有 `docker compose run --rm migrate` 会从 001 重放全部 migration；服务器历史数据使旧 Migration 005 的薪资约束失败。本次部署已单独执行 008 恢复正确约束，再执行 009。后续应把 migration runner 改为带版本记录的增量执行，不能把本次手工顺序当作长期方案。
 - V1.3.2 手动微信送达、文章包权限和正式双渠道首轮均已验收；后续仍需连续运行和故障恢复证据。
-- V1.3.3 正式订阅号当前为“服务器自动生成、维护者人工下载与发布”，不是公众号 API 全自动发布。
+- V1.3.5 正式订阅号当前为“服务器自动生成并创建草稿、维护者人工审核发布”，不是公众号 API 自动正式发布。
 - Windows `download-wechat-article.cmd/.ps1` 已真实拉取 2026-08-28 六文件文章包，校验 `new_job_count=256`，兼容 Windows PowerShell 5 中文编码；它只下载和整理，不自动发布。
 - `downloads/` 和 `runtime/` 含真实岗位发布产物，只能留在本地或服务器，不得提交公共仓库。
+- 微信草稿失败不回滚 ETL 或 Telegram；`failed`、`uploading` 和网络超时都应先检查后台与状态，不得自动重复创建。
+- `api.weixin.qq.com` 的直连例外只作用于微信 API；Telegram 的 Mihomo 路径不得因排查微信而整体移除。
 
 ## 11. 新对话交接提示词
 

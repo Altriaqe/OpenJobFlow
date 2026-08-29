@@ -1,5 +1,7 @@
 # 微信测试号配置与服务器验收
 
+> 本文保留微信测试号模板摘要的回归流程。V1.3.5 正式公众号自动草稿使用不同的 AppID、AppSecret、接口权限和幂等表，请改读[微信公众号自动草稿配置与排错指南](wechat-official-draft.md)。
+
 本文用于 OpenJobFlow V1.3.2。公开仓库不包含任何真实 `appsecret`、`openid`、模板 ID、报告 Token 或服务器地址。
 
 ## 能力边界

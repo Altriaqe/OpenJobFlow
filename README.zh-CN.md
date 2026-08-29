@@ -36,7 +36,7 @@ JobFlow 面向学习、研究、个人技术实践和小型自托管分析。它
 - 无需 AI Key 即可生成确定性的查询简报。
 - 可通过 OpenAI-compatible API 总结固定的结构化指标。
 - 可通过 Telegram Bot API 发送文字与图表。
-- 可通过微信测试号发送聚合模板摘要，并生成供人工检查发布的公众号文章排版包。
+- 可通过微信测试号发送聚合模板摘要，并为正式公众号自动创建含封面、趋势图和岗位卡片的待审核草稿。
 - 提供可移植的 Windows CMD/PowerShell 工具，在本机下载并校验公众号文章包，同时保持配置和发布决策私有。
 - 提供带保护逻辑的 Bash 每日工作流，运维者可使用自行审查的 systemd unit 调度。
 - 包含 Pytest 契约测试和 PostgreSQL 集成测试，并使用 Ruff 保证代码质量。
@@ -55,14 +55,16 @@ flowchart LR
     E --> G["可选 AI 总结<br/>OpenAI-compatible"]
     F --> H["Telegram<br/>自动发送"]
     G --> H
-    F --> I["微信测试号<br/>自动模板摘要"]
+    F --> I["微信测试号<br/>可选模板摘要"]
     G --> I
-    I --> J["可审核公众号文章包"]
-    J --> K["Windows 下载工具<br/>下载并校验"]
-    K --> L["人工审核与<br/>正式公众号发布"]
+    F --> J["微信文章包<br/>Markdown / HTML / PNG"]
+    G --> J
+    J --> K["正式公众号 API<br/>自动创建草稿"]
+    K --> L["后台人工审核并<br/>正式发布"]
+    J --> M["Windows 下载工具<br/>人工兜底"]
 ```
 
-AI 层不直接连接 PostgreSQL，也不能执行任意 SQL；它只接收固定应用查询返回的结构化结果。消息渠道不参与采集、标准化或数据库写入。Telegram 和微信测试号属于自动发送分支；正式公众号仍采用人工流程：服务器生成文章包，Windows 工具下载并校验，维护者审核后发布。
+AI 层不直接连接 PostgreSQL，也不能执行任意 SQL；它只接收固定应用查询返回的结构化结果。消息渠道不参与采集、标准化或数据库写入。Telegram 与微信分支独立：V1.3.5 在文章包生成后自动上传素材并创建正式公众号草稿，维护者仍需在后台审核和手动发布；Windows 下载工具保留为人工兜底。
 
 ## 10 分钟 Docker 复现
 
@@ -195,6 +197,7 @@ curl --fail 'http://127.0.0.1:8000/analytics/skills?limit=20'
 | AI | OpenAI-compatible API | 可选地总结固定结构化指标 |
 | 图表 | Matplotlib | 关键词与城市趋势图 |
 | 消息渠道 | Telegram Bot API | 可选文字和图片推送 |
+| 微信草稿 | 微信公众平台素材与草稿 API | 可选文章素材上传和待审核草稿创建 |
 | 部署 | Docker + Docker Compose | PostgreSQL、Migration、ETL 和 API 服务 |
 | 自动化 | Bash 脚本 + 运维者配置的 systemd | Ubuntu 高级每日运行和失败保护 |
 | 受限网络 | 可选 Mihomo Compose 覆盖配置 | 用户自行管理的代理环境中的应用出站 |
@@ -281,6 +284,8 @@ V1.3.2 增加可选的微信测试号模板摘要，以及由 `Markdown`、静�
 
 V1.3.4 增加供自托管运维者使用的 Windows 一键拉取工具。它从本机环境变量或命令参数读取每台电脑自己的 SSH 配置，下载一份已经生成的文章包，校验清单和六个文件，但不自动填写标题、作者，也不自动发布。使用方法见 [Windows 公众号文章包下载指南](docs/guides/wechat-article-download.md)。
 
+V1.3.5 增加正式公众号自动草稿：每日任务在生成文章包后上传封面永久素材和正文趋势图，通过草稿 API 创建待审核文章。中文请求使用显式 UTF-8，文章使用微信兼容的内联样式，并以 Migration 010 按日期记录幂等状态。草稿失败不影响 Telegram 或已完成的 ETL，也不会自动重试或自动正式发布。配置、验收与故障诊断见[微信公众号自动草稿指南](docs/guides/wechat-official-draft.md)。
+
 ## Ubuntu 部署
 
 对于长期运行的自托管部署，高层流程如下：
@@ -307,6 +312,7 @@ V1.3.4 增加供自托管运维者使用的 Windows 一键拉取工具。它从�
 | 配置应用直连代理变量 | `JOBFLOW_HTTP_PROXY`、`JOBFLOW_HTTPS_PROXY`、`JOBFLOW_NO_PROXY` | 网络可直连时留空。 |
 | 启用 AI 总结 | `OPENAI_BASE_URL`、`OPENAI_API_KEY`、`OPENAI_MODEL` | 仅 `mode=ai` 需要。 |
 | 启用 Telegram 报告 | `TELEGRAM_BOT_TOKEN`、`TELEGRAM_CHAT_ID`、`REPORT_TRIGGER_TOKEN` | 各项密钥保持私有并相互独立。 |
+| 启用正式公众号草稿 | `WECHAT_APP_ID`、`WECHAT_APP_SECRET`、`WECHAT_DRAFT_AUTHOR` | 正式账号与测试号配置不要混用；仍需人工发布。 |
 | 修改查询报告格式 | `src/jobflow/reports/query_report.py` | 修改后运行报告测试。 |
 | 修改 AI Prompt | `src/jobflow/ai/openai_summary.py` | 当前 Prompt 有意限定为指标总结。 |
 | 修改 Telegram 传输 | `src/jobflow/channels/telegram.py` | 保留不确定结果的处理逻辑。 |
@@ -395,6 +401,7 @@ JobFlow 自有代码和文档依据 [MIT License](LICENSE) 发布，版权归 20
 
 - [文档索引](docs/README.md)
 - [微信测试号配置指南](docs/guides/wechat-test-account.md)
+- [微信公众号自动草稿与排错指南](docs/guides/wechat-official-draft.md)
 - [Windows 公众号文章包下载指南](docs/guides/wechat-article-download.md)
 - [架构与实现状态](docs/reference/architecture.md)
 - [Ubuntu 部署与运维](docs/guides/ubuntu-deployment.md)

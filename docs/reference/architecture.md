@@ -1,6 +1,6 @@
 # 架构与实现状态
 
-更新日期：2026-08-26
+更新日期：2026-08-30
 
 JobFlow 的主线是招聘数据 ETL 与只读分析。数据源、写入、查询、AI 总结和消息发送分别放在独立边界中，避免某一层的变化扩散到整个系统。
 
@@ -44,21 +44,19 @@ Ubuntu Chrome CDP / 本地快照 / 后续合规动态数据源
                     │
           ┌─────────┴─────────┐
           ▼                   ▼
-   Telegram Bot 私聊      微信测试号模板
-   自动文字 + PNG          自动聚合摘要
+   Telegram Bot 私聊       微信文章排版包
+   自动文字 + PNG       Markdown / HTML / PNG
                               │
-                              ▼
-                   公众号文章排版包
-                 Markdown / HTML / PNG
-                              │
-                              ▼
-                 Windows 下载工具校验
-                               │
-                               ▼
-                   正式订阅号人工审核发布
+                    ┌─────────┴─────────┐
+                    ▼                   ▼
+           正式公众号 API        Windows 下载工具
+         上传素材并自动建草稿         人工兜底
+                    │
+                    ▼
+             后台人工审核与发布
 ```
 
-systemd timer 按计划启动每日 Shell。每日 Shell 在采集、ETL 和文章包生成完成后并行触发 Telegram、微信两个自动渠道。渠道状态独立记录：同一渠道同一天只能成功认领一次，某个渠道失败不会阻止另一个渠道尝试。正式公众号不走自动 API 发布，而是由 Windows 工具下载并校验文章包，再由维护者人工审核和发布。
+systemd timer 按计划启动每日 Shell。每日 Shell 在采集和 ETL 完成后并行触发 Telegram 图文推送与微信文章包生成；文章包成功后再上传封面和正文趋势图，自动创建正式公众号草稿。渠道状态独立记录：同一天的草稿只认领一次，微信失败不会回滚 ETL 或 Telegram。正式发布仍由维护者在后台审核后手动完成，Windows 下载工具保留为人工兜底。
 
 网络受限的部署环境可以通过 `JOBFLOW_HTTP_PROXY`、`JOBFLOW_HTTPS_PROXY` 和 `JOBFLOW_NO_PROXY` 为应用容器提供外联代理。代理客户端、节点和订阅属于部署环境，不属于 JobFlow 业务架构，也不进入公开仓库。
 
@@ -83,7 +81,7 @@ systemd timer 按计划启动每日 Shell。每日 Shell 在采集、ETL 和文�
 | `core` | `jobs` | 保存标准化、幂等去重后的岗位 |
 | `mart` | 3 个 View | 提供城市岗位、城市月薪和技能聚合 |
 
-当前 migration 位于 `migrations/001` 至 `009`，其中 `009` 预留微信公众号等新增渠道的独立投递状态表。mart 使用普通 PostgreSQL View，core 数据变化后查询结果自动更新，不需要 refresh。
+当前 migration 位于 `migrations/001` 至 `010`：`009` 保存通用新增渠道投递状态，`010` 新增 `ops.wechat_draft_jobs`，以日期唯一约束记录正式公众号草稿的 `uploading`、`created` 和 `failed`。mart 使用普通 PostgreSQL View，core 数据变化后查询结果自动更新，不需要 refresh。
 
 ### FastAPI
 
@@ -96,13 +94,19 @@ GET  /analytics/cities
 GET  /analytics/salaries/cities
 GET  /analytics/skills
 POST /reports/cities/send
+POST /reports/daily/multi/wechat/article/generate
+GET  /reports/daily/multi/wechat/article/status
+POST /reports/daily/multi/wechat/draft/create
+GET  /reports/daily/multi/wechat/draft/status
 ```
 
 分析接口只执行固定 SQL，并将 `limit` 限制在 1 到 100。`/health` 检查 API 进程，`/ready` 执行 `SELECT 1` 检查数据库依赖。FastAPI 自动生成 `/docs` 和 `/openapi.json`。
 
-### AI Summary Service 与 Telegram
+### AI Summary Service 与消息渠道
 
-`src/jobflow/reports/` 支持 `query` 与 `ai` 两种报告模式。`query` 使用数据库指标和固定规则生成中文查询简报；`ai` 才调用 `src/jobflow/ai/` 的 OpenAI-compatible Responses API。`src/jobflow/channels/` 通过 Telegram Bot API 发送文本和 PNG；企业微信适配器保留但未启用；微信公众号适配器只发送测试号模板摘要。渠道层不读取数据库、不生成报告，异常由上层状态机分类。
+`src/jobflow/reports/` 支持 `query` 与 `ai` 两种报告模式。`query` 使用数据库指标和固定规则生成中文查询简报；`ai` 才调用 `src/jobflow/ai/` 的 OpenAI-compatible Responses API。`src/jobflow/channels/` 负责 Telegram、微信测试号和正式公众号 API 传输；`wechat_draft_service.py` 校验文章包、上传两类素材、构造草稿并写入幂等状态。渠道层不读取数据库指标或生成报告，异常由上层服务分类。
+
+正式公众号草稿使用三个不同接口契约：永久封面素材返回 `media_id`，正文图片上传返回可嵌入的 `url`，草稿创建返回草稿 `media_id`。中文 JSON 以 `ensure_ascii=False` 编码为 UTF-8；文章样式使用内联 CSS，以适应微信对 `<style>`、class 和完整 HTML 外壳的清洗。
 
 `POST /reports/cities/send` 使用 Bearer Token 保护。它查询最多 100 个城市，空数据时跳过发送；OpenAI 模型或 Telegram 失败时返回通用 `502/503`，不向客户端暴露秘密和内部异常。
 
