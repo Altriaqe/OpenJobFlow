@@ -12,7 +12,8 @@ def _package(tmp_path, report_date):
     (tmp_path / "cover.png").write_bytes(cover)
     (tmp_path / "trend.png").write_bytes(trend)
     (tmp_path / "article.html").write_text(
-        '<section style="color:#182230;"><h1>2026-08-29 每日新增岗位公告</h1>'
+        '<section style="color:#182230;"><h1 style="font-size:24px;">'
+        "2026-08-29 每日新增岗位公告</h1>"
         '<img src="trend.png" style="width:100%;"></section>',
         encoding="utf-8",
     )

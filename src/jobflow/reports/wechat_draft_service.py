@@ -53,7 +53,8 @@ def _load_package(article_dir: Path, report_date: date) -> tuple[str, str]:
         if not isinstance(digest, str) or digest != actual:
             raise ValueError("article package image checksum is invalid")
     html = (article_dir / "article.html").read_text(encoding="utf-8")
-    match = re.search(r"<h1>(.*?)</h1>", html, re.IGNORECASE | re.DOTALL)
+    # 公众号兼容正文使用内联样式，因此标题标签允许包含 style 等安全属性。
+    match = re.search(r"<h1\b[^>]*>(.*?)</h1>", html, re.IGNORECASE | re.DOTALL)
     title = re.sub(r"<[^>]+>", "", match.group(1)).strip() if match else ""
     if not title:
         raise ValueError("article title is missing")
@@ -85,8 +86,12 @@ def create_wechat_draft_from_article(
     try:
         article_html, title = _load_package(Path(article_dir), report_date)
         token = get_wechat_access_token()
-        cover = upload_image(access_token=token, path=Path(article_dir) / "cover.png", permanent=True)
-        trend = upload_image(access_token=token, path=Path(article_dir) / "trend.png", permanent=False)
+        cover = upload_image(
+            access_token=token, path=Path(article_dir) / "cover.png", permanent=True
+        )
+        trend = upload_image(
+            access_token=token, path=Path(article_dir) / "trend.png", permanent=False
+        )
         if not trend.url:
             raise ValueError("trend image URL is missing")
         payload = build_draft_payload(
@@ -108,12 +113,16 @@ def create_wechat_draft_from_article(
         connection.commit()
         return DraftResult(report_date, "created", True)
     except Exception as exc:
-        error_code = "article_package_invalid" if isinstance(exc, ValueError) else "wechat_draft_failed"
+        error_code = (
+            "article_package_invalid" if isinstance(exc, ValueError) else "wechat_draft_failed"
+        )
         record_wechat_draft_failed(
             connection,
             report_date=report_date,
             error_code=error_code,
-            error_message="article package validation failed" if error_code == "article_package_invalid" else "WeChat draft creation failed",
+            error_message="article package validation failed"
+            if error_code == "article_package_invalid"
+            else "WeChat draft creation failed",
         )
         connection.commit()
         return DraftResult(report_date, "failed", False, error_code)
