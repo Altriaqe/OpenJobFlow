@@ -19,6 +19,26 @@ ARTICLE_DISCLAIMER = (
     "岗位信息来源于公开招聘页面，仅供学习研究。请以招聘平台原始页面及招聘方实际信息为准。"
 )
 
+# 微信草稿接口会清理 <style> 和 CSS class，因此文章正文使用集中维护的内联样式。
+# 这些属性只负责阅读层级；即使微信移除圆角等装饰，边框、间距和颜色仍能区分岗位。
+_INLINE = {
+    "root": "max-width:760px;margin:0 auto;padding:8px 4px;color:#182230;line-height:1.75;font-size:16px;",
+    "summary": "background:#eef4ff;padding:16px;border-radius:12px;margin:16px 0;",
+    "section_title": "font-size:20px;font-weight:700;margin:28px 0 12px;color:#182230;",
+    "table": "width:100%;border-collapse:collapse;margin:12px 0;table-layout:fixed;",
+    "th": "border:1px solid #dbe4f0;padding:8px 6px;background:#f5f7fa;text-align:left;",
+    "td": "border:1px solid #dbe4f0;padding:8px 6px;vertical-align:top;",
+    "group": "font-size:18px;font-weight:700;margin:26px 0 8px;color:#244a82;",
+    "job": "border-bottom:1px solid #dbe4f0;padding:16px 0 18px;margin:0;",
+    "job_table": "width:100%;border-collapse:collapse;table-layout:fixed;",
+    "title": "width:70%;font-size:17px;font-weight:700;color:#182230;vertical-align:top;",
+    "salary": "color:#e05a2a;width:30%;font-size:17px;font-weight:700;text-align:right;vertical-align:top;white-space:nowrap;",
+    "company": "font-weight:700;margin:8px 0 4px;color:#182230;",
+    "line": "margin:4px 0;color:#344054;",
+    "url": "margin:8px 0 0;color:#475467;overflow-wrap:anywhere;word-break:break-all;",
+    "disclaimer": "margin:28px 0 8px;color:#667085;font-size:13px;line-height:1.7;",
+}
+
 
 @dataclass(frozen=True)
 class KeywordNewJobs:
@@ -266,11 +286,13 @@ def _build_markdown(data: WechatArticleData, *, include_title: bool = True) -> s
 
 
 def _build_html(data: WechatArticleData) -> str:
-    """生成无脚本、无远程资源的静态 HTML，便于复制到公众号编辑器。"""
+    """生成公众号草稿接口可保留的内联 HTML 正文片段。"""
     rows = "".join(
         "<tr>"
-        f"<td>{html.escape(keyword)}</td><td>{total}</td>"
-        f"<td>{'基线建立中' if new_count is None else new_count}</td>"
+        f'<td style="{_INLINE["td"]}">{html.escape(keyword)}</td>'
+        f'<td style="{_INLINE["td"]}text-align:right;">{total}</td>'
+        f'<td style="{_INLINE["td"]}text-align:right;">'
+        f"{'基线建立中' if new_count is None else new_count}</td>"
         "</tr>"
         for keyword, total, new_count in data.keyword_rows
     )
@@ -279,72 +301,82 @@ def _build_html(data: WechatArticleData) -> str:
     if data.new_job_groups and all(
         group.postings is not None and not group.postings for group in data.new_job_groups
     ):
-        groups.append('<p class="empty">今日暂无新增岗位。</p>')
+        groups.append(
+            '<p style="padding:20px;text-align:center;background:#f5f7fa;'
+            'border-radius:12px;color:#475467;">今日暂无新增岗位。</p>'
+        )
     for group in data.new_job_groups:
         keyword = html.escape(group.keyword, quote=True)
         if group.postings is None:
-            groups.append(f"<section><h3>{keyword} · 基线建立中</h3></section>")
+            groups.append(
+                f'<section><h3 style="{_INLINE["group"]}">{keyword} · 基线建立中</h3></section>'
+            )
             continue
-        cards = []
+        cards: list[str] = []
         for posting in _sorted_postings(group.postings):
             job_url = ""
             if posting.detail_url:
                 url = html.escape(posting.detail_url, quote=True)
-                job_url = f'<p class="job-url">{JOB_URL_LABEL}<br>{url}</p>'
+                job_url = f'<p style="{_INLINE["url"]}">{JOB_URL_LABEL}<br>{url}</p>'
             education_label, skills_label = _requirement_labels(posting)
             education = (
-                f"<p>学历要求：{html.escape(education_label)}</p>"
+                f'<p style="{_INLINE["line"]}">学历要求：{html.escape(education_label)}</p>'
                 if education_label is not None
                 else ""
             )
             cards.append(
-                '<article class="job-card">'
-                '<div class="job-heading">'
-                f"<h4>{html.escape(posting.title)}</h4>"
-                f'<span class="salary">{html.escape(_salary_label(posting))}</span>'
-                "</div>"
-                f'<p class="company">{html.escape(posting.company)}</p>'
-                f"<p>工作地点：{html.escape(posting.city)}</p>"
+                f'<section style="{_INLINE["job"]}">'
+                f'<table role="presentation" style="{_INLINE["job_table"]}"><tr>'
+                f'<td style="{_INLINE["title"]}">{html.escape(posting.title)}</td>'
+                f'<td style="{_INLINE["salary"]}">'
+                f"{html.escape(_salary_label(posting))}</td>"
+                "</tr></table>"
+                f'<p style="{_INLINE["company"]}">{html.escape(posting.company)}</p>'
+                f'<p style="{_INLINE["line"]}">工作地点：{html.escape(posting.city)}</p>'
                 f"{education}"
-                f"<p>技能要求：{html.escape(skills_label)}</p>"
-                f"{job_url}</article>"
+                f'<p style="{_INLINE["line"]}">技能要求：'
+                f"{html.escape(skills_label)}</p>"
+                f"{job_url}</section>"
             )
         groups.append(
-            f"<section><h3>{keyword} · 新增 {len(group.postings)} 个</h3>"
-            + "".join(cards)
-            + "</section>"
+            f'<section><h3 style="{_INLINE["group"]}">'
+            f"{keyword} · 新增 {len(group.postings)} 个</h3>" + "".join(cards) + "</section>"
         )
+
+    city_advantages = "".join(
+        f'<p style="{_INLINE["line"]}">{html.escape(city)}：'
+        f"{html.escape(keyword)} 新增样本最多（{count} 条）</p>"
+        for city, keyword, count in data.city_advantages
+    )
+    weekly = (
+        f'<h2 style="{_INLINE["section_title"]}">周对比</h2>'
+        f'<p style="{_INLINE["line"]}">{html.escape(data.weekly_summary)}</p>'
+        if data.weekly_summary
+        else ""
+    )
     return (
-        '<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">'
-        f"<title>{title}</title><style>body{{max-width:760px;margin:auto;padding:24px;"
-        "font-family:Arial,'Microsoft YaHei',sans-serif;color:#182230;line-height:1.7}}"
-        ".summary{background:#eef4ff;padding:16px;border-radius:12px}.job-card{border:1px solid "
-        "#dbe4f0;border-radius:14px;padding:18px;margin:14px 0}.job-heading{display:flex;gap:16px;"
-        "justify-content:space-between;align-items:flex-start}.job-heading h4{margin:0}.salary{color:#e05a2a;"
-        "font-weight:700;white-space:nowrap}.company{font-weight:600}.job-url{overflow-wrap:anywhere}"
-        ".empty{padding:24px;text-align:center;background:#f5f7fa;border-radius:12px}</style></head><body>"
-        f"<h1>{title}</h1>"
-        f'<div class="summary"><p>今日新增岗位：{_new_job_count(data)}<br>'
+        f'<section style="{_INLINE["root"]}">'
+        f'<h1 style="font-size:24px;margin:8px 0 16px;color:#182230;">{title}</h1>'
+        f'<section style="{_INLINE["summary"]}"><p style="margin:0;">'
+        f"今日新增岗位：{_new_job_count(data)}<br>"
         f"搜索关键词：{'、'.join(html.escape(row[0]) for row in data.keyword_rows)}<br>"
-        f"覆盖城市：{'、'.join(html.escape(city) for city in data.cities)}</p></div>"
-        "<h2>关键词趋势</h2><table><thead><tr><th>关键词</th>"
-        "<th>当前样本</th><th>较前日新增</th></tr></thead>"
+        f"覆盖城市：{'、'.join(html.escape(city) for city in data.cities)}</p></section>"
+        f'<h2 style="{_INLINE["section_title"]}">关键词趋势</h2>'
+        f'<table style="{_INLINE["table"]}"><thead><tr>'
+        f'<th style="{_INLINE["th"]}">关键词</th>'
+        f'<th style="{_INLINE["th"]}text-align:right;">当前样本</th>'
+        f'<th style="{_INLINE["th"]}text-align:right;">较前日新增</th></tr></thead>'
         f"<tbody>{rows}</tbody></table>"
-        "<h2>城市优势组合</h2><ul>"
-        + "".join(
-            f"<li>{html.escape(city)}：{html.escape(keyword)} 新增样本最多（{count} 条）</li>"
-            for city, keyword, count in data.city_advantages
-        )
-        + "</ul>"
-        + '<h2>趋势图</h2><img src="trend.png" alt="多关键词城市趋势">'
-        + (
-            f"<h2>周对比</h2><p>{html.escape(data.weekly_summary)}</p>"
-            if data.weekly_summary
-            else ""
-        )
-        + "<h2>今日新增岗位</h2>"
+        f'<h2 style="{_INLINE["section_title"]}">城市优势组合</h2>'
+        + city_advantages
+        + f'<h2 style="{_INLINE["section_title"]}">趋势图</h2>'
+        + '<img src="trend.png" alt="多关键词城市趋势" '
+        + 'style="display:block;width:100%;height:auto;margin:12px 0;">'
+        + weekly
+        + f'<h2 style="{_INLINE["section_title"]}">今日新增岗位</h2>'
         + "".join(groups)
-        + f"<p>{ARTICLE_DISCLAIMER}</p></body></html>"
+        + f'<p style="{_INLINE["disclaimer"]}">{ARTICLE_DISCLAIMER}</p>'
+        + "</section>"
     )
 
 

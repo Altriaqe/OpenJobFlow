@@ -134,7 +134,13 @@ def test_html_has_no_script_remote_resource_or_sensitive_fields(tmp_path):
     assert 'src="http' not in html.lower()
     assert "openid" not in html.lower()
     assert "appsecret" not in html.lower()
-    assert html.count('class="job-card"') == 3
+    for forbidden in ("<!doctype", "<html", "<head", "<style", "class=", "display:flex"):
+        assert forbidden not in html.lower()
+    assert html.count('style="border-bottom:1px solid #dbe4f0;') == 3
+    assert 'style="background:#eef4ff;' in html
+    assert 'style="color:#e05a2a;' in html
+    assert 'style="width:100%;border-collapse:collapse;' in html
+    assert "overflow-wrap:anywhere" in html
     assert "&lt;示例&gt;公司" in html
     assert "岗位原始地址（复制后打开）：<br>https://example.test/jobs/1" in html
     assert html.count("岗位原始地址（复制后打开）：<br>https://example.test/jobs/") == 3
@@ -143,10 +149,8 @@ def test_html_has_no_script_remote_resource_or_sensitive_fields(tmp_path):
     assert "薪资面议" in html
     assert 'src="trend.png"' in html
     assert "学历要求：" not in html
-    assert (
-        "<p>岗位信息来源于公开招聘页面，仅供学习研究。"
-        "请以招聘平台原始页面及招聘方实际信息为准。</p>"
-    ) in html
+    assert "岗位信息来源于公开招聘页面，仅供学习研究。" in html
+    assert "请以招聘平台原始页面及招聘方实际信息为准。" in html
     assert "固定页数招聘岗位样本" not in html
     assert "今日新增岗位：3" in html
     assert "搜索关键词：AI Agent、Python开发" in html
@@ -326,7 +330,7 @@ def test_complete_baseline_with_zero_new_jobs_renders_empty_notice(tmp_path):
     html = (tmp_path / "wechat" / "article.html").read_text(encoding="utf-8")
 
     assert "今日暂无新增岗位" in html
-    assert 'class="job-card"' not in html
+    assert 'style="border-bottom:1px solid #dbe4f0;' not in html
 
 
 def test_build_article_data_reuses_keyword_trend_metrics():
