@@ -39,7 +39,7 @@ def test_proxy_compose_routes_only_api_runtime_traffic() -> None:
 
     assert "HTTP_PROXY: http://mihomo:7890" in api
     assert "HTTPS_PROXY: http://mihomo:7890" in api
-    assert "NO_PROXY: postgres,mihomo,localhost,127.0.0.1" in api
+    assert "NO_PROXY: ${JOBFLOW_NO_PROXY:-postgres,mihomo,localhost,127.0.0.1}" in api
     assert "condition: service_started" in api
     assert "network: host" in api
 

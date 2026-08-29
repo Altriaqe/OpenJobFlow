@@ -76,10 +76,19 @@ def test_build_payload_rejects_unreplaced_local_image():
 def test_create_draft_returns_media_id_without_publishing():
     post = Mock(return_value=response({"errcode": 0, "media_id": "draft-media"}))
 
-    draft_id = create_draft(access_token="token", payload={"articles": []}, post=post)
+    draft_id = create_draft(
+        access_token="token",
+        payload={"articles": [{"title": "每日新增岗位公告"}]},
+        post=post,
+    )
 
     assert draft_id == "draft-media"
     assert "/cgi-bin/draft/add?" in post.call_args.args[0]
+    assert "每日新增岗位公告".encode() in post.call_args.kwargs["data"]
+    assert b"\\u6bcf" not in post.call_args.kwargs["data"]
+    assert post.call_args.kwargs["headers"] == {
+        "Content-Type": "application/json; charset=utf-8"
+    }
 
 
 def test_create_draft_maps_wechat_error_without_secret():

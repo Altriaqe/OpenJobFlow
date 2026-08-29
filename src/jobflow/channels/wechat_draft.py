@@ -1,6 +1,7 @@
 """微信公众号素材上传和草稿创建客户端。"""
 
 from dataclasses import dataclass
+import json
 from pathlib import Path
 from typing import Callable
 from urllib.parse import urlencode
@@ -104,7 +105,10 @@ def create_draft(
     try:
         response = (post or requests.post)(
             f"{WECHAT_API_BASE}/cgi-bin/draft/add?{urlencode({'access_token': access_token})}",
-            json=payload,
+            # 微信草稿接口会把 ASCII JSON 中的 \uXXXX 当作正文文本保存；
+            # 显式发送 UTF-8 JSON，确保标题和正文中的中文保持原文。
+            data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+            headers={"Content-Type": "application/json; charset=utf-8"},
             timeout=30,
         )
         response.raise_for_status()

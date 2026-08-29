@@ -16,7 +16,7 @@ services:
     environment:
       HTTP_PROXY: http://mihomo:7890
       HTTPS_PROXY: http://mihomo:7890
-      NO_PROXY: postgres,mihomo,localhost,127.0.0.1
+      NO_PROXY: ${JOBFLOW_NO_PROXY:-postgres,mihomo,localhost,127.0.0.1}
     depends_on:
       mihomo:
         condition: service_started
