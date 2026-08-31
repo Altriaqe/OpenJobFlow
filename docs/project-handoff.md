@@ -1,20 +1,20 @@
 # JobFlow 项目当前状态与开发交接
 
-更新日期：2026-08-30
+更新日期：2026-08-31
 
 这份文档是上下文压缩、新对话、换电脑或暂停开发后的第一入口。继续开发前先读取本文件，再用代码、测试、Git 和服务器实际输出确认可能变化的状态。
 
-## 0. 2026-08-30 当前停点（V1.3.5）
+## 0. 2026-08-31 当前停点（V1.3.5）
 
 V1.3.5 已把“服务器生成文章包、Windows 下载、人工导入”升级为“服务器生成文章包、自动创建正式公众号草稿、人工审核发布”。Telegram 仍按原链路自动发送，Windows 下载工具保留为故障兜底，V1.3.2 测试号接口保留供手动回归。
 
-当前代码与 Git 停点为：
+当前代码与 Git 停点（本次文档更新前基线）为：
 
 ```text
 仓库：Altriaqe/OpenJobFlow
 本机目录：<LOCAL_JOBFLOW_DIR>
-稳定分支 main / origin/main：1e6d192
-最新提交：兼容微信公众号内联标题解析
+稳定分支 main / origin/main：6f322fd
+最新提交：更新 V1.3.5 项目与维护文档
 离线回归：349 passed，1 skipped，1 warning
 Ruff check：通过
 Ubuntu 项目目录：<JOBFLOW_DIR>
@@ -60,6 +60,8 @@ docs/development/plans/2026-08-26-wechat-official-daily-delivery.md
 - 永久封面以 `media_id` 验收，正文图片以 `url` 验收，避免混用接口响应契约；
 - 草稿 JSON 以 `ensure_ascii=False` 编码为 UTF-8，正文使用微信可保留的内联样式，标题正则允许 `<h1>` 属性；
 - 离线非 PostgreSQL 回归为 `349 passed, 1 skipped, 1 warning`，`ruff check src tests`、触及文件格式检查和 `git diff --check` 均通过；本机未加载数据库变量时不把 integration 测试记作通过。
+
+2026-08-31 的正式 timer 运行中，ETL 与微信草稿生成成功。Telegram 首次返回 `text_uncertain`，用户在目标聊天中确认文字可见后，按受保护的 `recover-photo?confirm_text_visible=true` 流程仅补发一张热力图，未重发文字。该次运行最终完成，但仍属于一次稳定性观察样本。周趋势只在周日生成，周一不显示属于当前设计行为。
 
 下一步是继续观察正式 timer 的连续运行，并在每周结束时验收本周与上周对比。公众号最终审核与发布保持人工确认。自动备份恢复、登录失效通知和公网 HTTPS 仍未完成。
 
