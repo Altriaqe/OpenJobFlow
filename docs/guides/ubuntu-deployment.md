@@ -312,6 +312,37 @@ flock 单实例锁
 
 Chrome 服务重启后可能需要通过 VNC 人工登录一次。日常 timer 只复用长期运行的 Chrome，不应每天重启浏览器。
 
+### 重启后恢复虚拟窗口和 Chrome
+
+```bash
+sudo systemctl restart jobflow-xvfb.service
+sudo systemctl restart jobflow-boss-chrome.service
+sudo systemctl restart jobflow-x11vnc.service
+sleep 5
+systemctl is-active jobflow-xvfb.service jobflow-boss-chrome.service jobflow-x11vnc.service
+curl --fail http://127.0.0.1:9222/json/version
+```
+
+如需在 Windows 上人工登录，建立仅本机可见的 SSH 隧道：
+
+```cmd
+ssh -N -L <LOCAL_VNC_PORT>:127.0.0.1:<SERVER_VNC_PORT> <SSH_USER>@<TAILSCALE_IP>
+```
+
+然后用 TigerVNC 连接 `127.0.0.1:<LOCAL_VNC_PORT>`。完成登录后关闭隧道窗口，不要把真实地址、用户名或端口写入公开仓库。
+
+### 错过 timer 后手动补跑
+
+关机期间 systemd timer 不会自动补跑。确认 BOSS `--check` 和一页抓取通过后，只手动启动一次正式服务：
+
+```bash
+sudo systemctl start jobflow-daily-update.service
+sudo systemctl status jobflow-daily-update.service --no-pager
+journalctl -u jobflow-daily-update.service -n 120 --no-pager
+```
+
+不要在 service 运行期间再次执行 `bash ops/daily_update.sh`。只有确认当天没有已完成快照或已发送记录时才补跑；Telegram 或微信结果不确定时，先查状态，不要整套重发。
+
 ## 笔记本服务器合盖运行（可选）
 
 如果 Ubuntu 本身安装在笔记本上，默认合盖可能触发休眠，Docker、Chrome、timer 和网络都会暂停。先检查是否已有覆盖：
