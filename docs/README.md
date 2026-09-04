@@ -32,6 +32,7 @@
 ## 运行证据与历史
 
 - [`operations/2026-08-25-daily-update-production-acceptance.md`](operations/2026-08-25-daily-update-production-acceptance.md)：API 就绪等待修复后的正式日报验收记录。
+- [`operations/2026-09-04-dual-channel-stability.md`](operations/2026-09-04-dual-channel-stability.md)：V1.3.5 微信公众号与 Telegram 双渠道稳定发送观察记录。
 - [`archive/README.md`](archive/README.md)：已完成或被替代的历史设计与实施计划。
 
 ## 维护规则
