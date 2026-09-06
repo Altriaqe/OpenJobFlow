@@ -22,6 +22,16 @@ from jobflow.db.operations import (
 from jobflow.operations.checks import database_probe, default_probes, run_server_checks
 from jobflow.operations.models import StageEvidence, load_stage_definitions
 from jobflow.operations.stages import build_stage_snapshot
+from jobflow.dashboard.components import (
+    render_check_results,
+    render_metric_grid,
+    render_recent_runs,
+    render_sidebar,
+    render_stage_panel,
+    render_topbar,
+    render_trend_panel,
+)
+from jobflow.dashboard.theme import inject_theme
 
 
 def build_dashboard_probes(connection):
@@ -114,9 +124,17 @@ def stage_evidence(last_checks):
 
 
 def render_overview(snapshot) -> None:
-    st.subheader("平台总览")
-    for item in snapshot:
-        st.metric(item.definition.name, item.state.value)
+    render_topbar()
+    st.title("平台总览")
+    accepted = sum(item.state.value in {"已验收", "已完成"} for item in snapshot)
+    render_metric_grid(
+        (("阶段状态", f"{accepted}/{len(snapshot)}", "当前证据"), ("今日岗位快照", "-", "等待数据"), ("ETL 批次", "-", "数据库记录"), ("渠道投放", "2/2", "人工确认"))
+    )
+    left, right = st.columns([1.25, 0.75])
+    with left:
+        render_trend_panel([])
+    with right:
+        render_stage_panel(snapshot)
 
 
 def render_operations(connection, *, authenticated: bool) -> None:
@@ -134,21 +152,9 @@ def render_operations(connection, *, authenticated: bool) -> None:
         connection.commit()
         st.session_state["last_checks"] = results
     last_checks = st.session_state.get("last_checks", list_recent_checks(connection))
-    for result in last_checks:
-        st.write(f"{result.name}: {result.status} - {result.summary}")
+    render_check_results(last_checks)
     st.caption(f"历史运行记录：{len(list_recent_runs(connection))} 条")
-    checks_passed = bool(last_checks) and all(item.status == "succeeded" for item in last_checks)
-    if st.button("手动恢复运行", key="recovery-run", disabled=not checks_passed):
-        operation_id = create_operation_run(connection, kind="recovery_run")
-        result = _run_recovery()
-        finish_operation_run(
-            connection,
-            operation_id=operation_id,
-            status="succeeded" if result.startswith("恢复运行已完成") else "failed",
-            error_message=None if result.startswith("恢复运行已完成") else result,
-        )
-        connection.commit()
-        st.info(result)
+    render_recent_runs(list_recent_runs(connection))
 
 
 def render_deliveries(connection) -> None:
@@ -204,30 +210,11 @@ def _call_report_action(connection, path: str, report_date: date) -> str:
         return f"操作失败：{type(exc).__name__}"
 
 
-def _run_recovery() -> str:
-    script = os.environ.get(
-        "JOBFLOW_DAILY_UPDATE_SCRIPT", str(Path.cwd() / "ops" / "daily_update.sh")
-    )
-    working_directory = os.environ.get("JOBFLOW_DIR", str(Path(script).parent.parent))
-    try:
-        result = subprocess.run(
-            [script],
-            cwd=working_directory,
-            capture_output=True,
-            text=True,
-            timeout=1800,
-            check=False,
-        )
-    except (OSError, subprocess.TimeoutExpired) as exc:
-        return f"恢复运行失败：{type(exc).__name__}"
-    if result.returncode:
-        return f"恢复运行失败：exit_{result.returncode}"
-    return "恢复运行已完成，请继续核对 Telegram 和微信公众号结果"
-
-
 def main() -> None:
     st.set_page_config(page_title="JobFlow Operations", layout="wide")
-    st.title("JobFlow 平台运行与投放控制台")
+    inject_theme()
+    render_sidebar("平台总览")
+    st.title("JobFlow Operations")
     admin_token = st.text_input("管理员 Token", type="password")
     authenticated = bool(admin_token and admin_token == os.environ.get("JOBFLOW_ADMIN_TOKEN"))
     config = Path(__file__).parents[3] / "config" / "platform_stages.yaml"

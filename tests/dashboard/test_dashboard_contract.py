@@ -25,7 +25,7 @@ def test_dashboard_does_not_contain_direct_sql_or_shell_execution():
     assert "cursor(" not in APP
     assert "requests." not in APP
     assert "subprocess.run" in APP
-    assert "[script]" in APP
+    assert "手动恢复运行" not in APP
     assert "claim_delivery_action" in APP
     assert "finish_delivery_action" in APP
 
