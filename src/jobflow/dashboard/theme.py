@@ -9,7 +9,7 @@ def inject_theme() -> None:
         <style>
         :root { --jf-blue:#1677c8; --jf-ink:#182433; --jf-muted:#64748b; --jf-line:#d9e1ea; --jf-bg:#eef2f6; }
         .stApp { background:var(--jf-bg); color:#1f2937; }
-        .stApp, .stApp p, .stApp label, .stApp span, .stApp div { color:#1f2937; }
+        .stApp p, .stApp label, .stApp span { color:#1f2937; }
         .stCaption, [data-testid="stCaptionContainer"], [data-testid="stCaptionContainer"] * { color:#64748b !important; }
         [data-baseweb="tab-list"] [data-baseweb="tab"] { color:#475569 !important; }
         [data-baseweb="tab-list"] [aria-selected="true"] { color:var(--jf-blue) !important; }
@@ -17,7 +17,17 @@ def inject_theme() -> None:
         [data-testid="stMarkdownContainer"] small { color:#64748b !important; }
         [data-testid="stHeader"] { background:rgba(238,242,246,.92); }
         [data-testid="stSidebar"] { background:var(--jf-ink); }
-        [data-testid="stSidebar"] * { color:#d6e0ea; }
+        [data-testid="stSidebar"] *, [data-testid="stSidebar"] p,
+        [data-testid="stSidebar"] span, [data-testid="stSidebar"] div { color:#d6e0ea !important; }
+        [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2,
+        [data-testid="stSidebar"] h3 { color:#fff !important; }
+        [data-testid="stTextInput"] input, [data-testid="stDateInput"] input {
+            background:#fff !important; color:#172033 !important; border:1px solid #cbd5e1 !important;
+        }
+        [data-testid="stTextInput"] svg, [data-testid="stDateInput"] svg { color:#64748b !important; }
+        .stButton > button { background:#1677c8 !important; color:#fff !important; border:0 !important; }
+        .stButton > button:hover { background:#125fa0 !important; color:#fff !important; }
+        .stButton > button:disabled { background:#cbd5e1 !important; color:#64748b !important; }
         [data-testid="stMetric"] { background:#fff; border:1px solid var(--jf-line); border-radius:4px; padding:12px; }
         [data-testid="stMetricLabel"] { color:var(--jf-muted); }
         [data-testid="stMetricValue"] { color:#172033; }
