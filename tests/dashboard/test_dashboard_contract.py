@@ -28,3 +28,9 @@ def test_dashboard_does_not_contain_direct_sql_or_shell_execution():
     assert "[script]" in APP
     assert "claim_delivery_action" in APP
     assert "finish_delivery_action" in APP
+
+
+def test_dashboard_telegram_probe_supports_existing_delivery_states():
+    assert "ops.report_deliveries" in APP
+    assert "completed_text_uncertain" in APP
+    assert "ops.report_channel_deliveries" in APP

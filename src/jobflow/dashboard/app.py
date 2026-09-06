@@ -38,6 +38,9 @@ def build_dashboard_probes(connection):
                 "telegram",
                 connection,
                 """SELECT EXISTS (
+                    SELECT 1 FROM ops.report_deliveries
+                    WHERE status IN ('completed', 'completed_text_uncertain')
+                ) OR EXISTS (
                     SELECT 1 FROM ops.report_channel_deliveries
                     WHERE channel = 'telegram' AND status = 'sent'
                 )""",
