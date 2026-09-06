@@ -10,6 +10,7 @@ __pycache__/
 # Virtual environments and local configuration
 .venv/
 venv/
+node_modules/
 .env
 .env.*
 !.env.example
