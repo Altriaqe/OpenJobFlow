@@ -23,6 +23,7 @@ RUN apt-get update \
 
 COPY pyproject.toml README.md ./
 COPY src ./src
+COPY config ./config
 
 RUN HTTP_PROXY="${HTTP_PROXY}" \
     HTTPS_PROXY="${HTTPS_PROXY}" \

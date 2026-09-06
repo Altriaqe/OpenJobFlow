@@ -27,6 +27,8 @@
 
 - [`project-handoff.md`](project-handoff.md)：当前目标、Git 状态、验证结果和下一步，是新对话与恢复开发的固定入口。
 - [`development/README.md`](development/README.md)：当前版本仍在开发或等待验收的设计与计划。
+- [`development/specs/2026-09-05-platform-operations-dashboard-design.md`](development/specs/2026-09-05-platform-operations-dashboard-design.md)：平台运行与投放控制台设计。
+- [`development/plans/2026-09-05-platform-operations-dashboard.md`](development/plans/2026-09-05-platform-operations-dashboard.md)：控制台实施计划。
 - [`development/learning-notes.md`](development/learning-notes.md)：开发过程中遇到的问题、诊断顺序和修复原因。
 
 ## 运行证据与历史

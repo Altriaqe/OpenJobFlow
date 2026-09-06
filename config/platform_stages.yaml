@@ -1,0 +1,33 @@
+stages:
+  - id: data_source
+    name: 数据源
+    goal: 提供合规、可重复读取的招聘数据来源
+    acceptance: 快照结构和字段质量校验通过
+  - id: collection
+    name: 采集任务
+    goal: 按计划生成完整的城市与关键词快照
+    acceptance: 登录态、采集范围和快照文件均通过检查
+  - id: etl
+    name: ETL 处理
+    goal: 清洗、标准化、去重并写入数据库
+    acceptance: 批次成功且失败能够回滚
+  - id: postgres
+    name: PostgreSQL 数据层
+    goal: 保存 ops、raw、core 和 mart 数据
+    acceptance: migration、幂等写入和就绪检查通过
+  - id: analytics_api
+    name: 数据分析 API
+    goal: 对外提供固定的只读分析接口
+    acceptance: health、ready 和分析接口通过验证
+  - id: reports
+    name: 报告生成
+    goal: 根据指定日期生成可追溯报告和文章包
+    acceptance: 报告包含日期、来源和指标口径
+  - id: telegram
+    name: Telegram 投放
+    goal: 投放文字简报和趋势图片
+    acceptance: 指定日期的文字与图片均收到
+  - id: wechat
+    name: 微信公众号投放
+    goal: 创建正式公众号待审核草稿
+    acceptance: 草稿可在后台预览，正式发布由人工完成

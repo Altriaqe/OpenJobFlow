@@ -67,6 +67,19 @@ docs/development/plans/2026-08-26-wechat-official-daily-delivery.md
 
 下一步是继续观察正式 timer 的连续运行，并在每周结束时验收本周与上周对比。公众号最终审核与发布保持人工确认。自动备份恢复、登录失效通知和公网 HTTPS 仍未完成。
 
+## 2026-09-06 平台运行与投放控制台开发停点
+
+第一阶段 Streamlit 控制台已在本地完成代码实现，包含平台总览、运行中心和投放中心。阶段定义位于 `config/platform_stages.yaml`，运行检查、恢复运行和日期/渠道操作记录由 Migration 011 提供 PostgreSQL 表。控制台绑定回环地址，管理员 Token 只从服务器环境读取；Telegram 与微信公众号仍分别操作，微信公众号只创建草稿。
+
+当前状态是“本地代码完成，Ubuntu 待迁移验收”，不能表述为服务器已部署。继续工作前需要在 Ubuntu 执行 Migration 011，安装包含 Streamlit 的镜像/环境，安装 `jobflow-dashboard.service`，通过 SSH 隧道打开页面，并完成一次服务器检查和一次用户选择日期的恢复验收。真实投放结果、数据库记录和 systemd 状态必须以服务器现场输出为准。
+
+设计与实施计划：
+
+```text
+docs/development/specs/2026-09-05-platform-operations-dashboard-design.md
+docs/development/plans/2026-09-05-platform-operations-dashboard.md
+```
+
 新对话恢复提示词：
 
 ```text

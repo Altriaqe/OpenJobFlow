@@ -1,0 +1,15 @@
+[Unit]
+Description=JobFlow Streamlit operations dashboard
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=<JOBFLOW_DIR>
+EnvironmentFile=<JOBFLOW_ENV_FILE>
+ExecStart=<VENV_DIR>/bin/streamlit run <JOBFLOW_DIR>/src/jobflow/dashboard/app.py --server.address 127.0.0.1 --server.port 8501 --server.headless true
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

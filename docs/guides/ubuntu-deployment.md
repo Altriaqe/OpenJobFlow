@@ -343,6 +343,26 @@ journalctl -u jobflow-daily-update.service -n 120 --no-pager
 
 不要在 service 运行期间再次执行 `bash ops/daily_update.sh`。只有确认当天没有已完成快照或已发送记录时才补跑；Telegram 或微信结果不确定时，先查状态，不要整套重发。
 
+## Streamlit 运行与投放控制台
+
+控制台使用 systemd 在服务器宿主机运行，绑定回环地址，方便通过 SSH 隧道访问。宿主机运行方式也使它能够检查 Xvfb、Chrome、x11vnc 和 daily timer；不要把服务器重启检查依赖在普通 API 容器内。
+
+安装公开服务模板时，将 `ops/jobflow-dashboard.service.example` 复制为 `/etc/systemd/system/jobflow-dashboard.service`，替换其中的项目目录、虚拟环境和私有环境文件占位符，然后执行：
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now jobflow-dashboard.service
+systemctl is-active jobflow-dashboard.service
+```
+
+Windows 通过 SSH 隧道访问：
+
+```cmd
+ssh -N -L <LOCAL_DASHBOARD_PORT>:127.0.0.1:<DASHBOARD_PORT> <SSH_USER>@<TAILSCALE_IP>
+```
+
+进入控制台后，先输入管理员 Token，再执行服务器重启检查。只有检查全部通过时才能启动手动恢复运行；Telegram 和微信公众号操作必须分别选择明确的 `report_date`。微信公众号只创建待审核草稿，正式发表仍由人工完成。
+
 ## 笔记本服务器合盖运行（可选）
 
 如果 Ubuntu 本身安装在笔记本上，默认合盖可能触发休眠，Docker、Chrome、timer 和网络都会暂停。先检查是否已有覆盖：
