@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from jobflow.api.analytics import router as analytics_router
 from jobflow.api.health import router as health_router
 from jobflow.api.reports import router as reports_router
+from jobflow.api.stages import router as stages_router
 
 
 def create_app() -> FastAPI:
@@ -31,6 +32,7 @@ def create_app() -> FastAPI:
     app.include_router(health_router)
     app.include_router(analytics_router)
     app.include_router(reports_router)
+    app.include_router(stages_router)
     return app
 
 
