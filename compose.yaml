@@ -94,6 +94,21 @@ services:
       timeout: 3s
       retries: 5
 
+  frontend:
+    build:
+      context: ./frontend
+    image: jobflow-frontend:local
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${FRONTEND_BIND_HOST:-127.0.0.1}:${FRONTEND_PORT:-5173}:80"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
   dashboard:
     <<: *jobflow-app
     command: ["streamlit", "run", "src/jobflow/dashboard/app.py", "--server.address", "0.0.0.0", "--server.port", "8501", "--server.headless", "true"]
