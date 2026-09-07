@@ -7,6 +7,21 @@ export type StageStatus = {
   acceptance: string;
   state: string;
 };
+export type CheckStatus = {
+  name: string;
+  status: string;
+  summary: string;
+  error: string | null;
+};
+export type OperationRun = {
+  id: number;
+  kind: string;
+  report_date: string | null;
+  status: string;
+  error_message: string | null;
+  started_at: string;
+  finished_at: string | null;
+};
 
 const API_BASE_URL = (
   import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000"
@@ -26,4 +41,6 @@ export const jobflowApi = {
   cityJobCounts: (limit = 20) =>
     get<CityJobCount[]>(`/analytics/cities?limit=${limit}`),
   stageStatuses: () => get<StageStatus[]>("/operations/stages"),
+  recentChecks: () => get<CheckStatus[]>("/operations/checks"),
+  recentRuns: () => get<OperationRun[]>("/operations/runs"),
 };

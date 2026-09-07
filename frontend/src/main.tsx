@@ -24,7 +24,13 @@ import {
 import "./styles.css";
 import "./extra.css";
 import "./stage.css";
-import { jobflowApi, type CityJobCount, type StageStatus } from "./api";
+import {
+  jobflowApi,
+  type CheckStatus,
+  type CityJobCount,
+  type OperationRun,
+  type StageStatus,
+} from "./api";
 
 type Page = "overview" | "operations" | "delivery" | "analytics" | "alerts";
 const nav = [
@@ -154,51 +160,94 @@ function LiveStageOverview() {
 }
 
 function Operations() {
+  const [checks, setChecks] = useState<CheckStatus[] | null>(null);
+  const [runs, setRuns] = useState<OperationRun[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
+  const loadOperations = () => {
+    setLoading(true);
+    setError(false);
+    Promise.all([jobflowApi.recentChecks(), jobflowApi.recentRuns()])
+      .then(([nextChecks, nextRuns]) => {
+        setChecks(nextChecks);
+        setRuns(nextRuns);
+      })
+      .catch(() => setError(true))
+      .finally(() => setLoading(false));
+  };
+  useEffect(loadOperations, []);
+  const checkNames = [
+    ["tailscale_ssh", "Tailscale / SSH"],
+    ["xvfb", "Xvfb"],
+    ["chrome", "Chrome"],
+    ["x11vnc", "x11vnc"],
+    ["daily_timer", "Daily Timer"],
+    ["postgres", "PostgreSQL"],
+    ["api_container", "API 容器"],
+    ["health", "健康检查"],
+    ["ready", "就绪检查"],
+    ["boss_login", "BOSS 登录"],
+    ["latest_etl", "最近 ETL"],
+    ["telegram", "Telegram"],
+    ["wechat", "微信公众号"],
+  ];
+  const latestChecks = new Map((checks ?? []).map((item) => [item.name, item]));
+  const visibleChecks = checkNames.map(([name, label]) => ({
+    label,
+    result: latestChecks.get(name),
+  }));
+  const failedCount = visibleChecks.filter(
+    ({ result }) => result?.status === "failed",
+  ).length;
+  const latestRun = runs?.[0];
+  const runTime = latestRun?.started_at
+    ? new Date(latestRun.started_at).toLocaleString("zh-CN", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "暂无记录";
   return (
     <>
       <div className="notice">
-        <CheckCircle2 size={18} />
+        {failedCount ? <AlertTriangle size={18} /> : <CheckCircle2 size={18} />}
         <span>
-          <b>系统检查已通过</b>
-          <small>13 项检查全部成功，最近检查时间：今天 16:20</small>
+          <b>{error ? "检查服务未连接" : failedCount ? `${failedCount} 项检查未通过` : "系统检查已通过"}</b>
+          <small>
+            {checks ? `${visibleChecks.length} 项检查，最近记录：${runTime}` : "正在读取服务器检查记录"}
+          </small>
         </span>
       </div>
       <Panel title="服务器重启检查" action="刚刚更新">
         <div className="checks">
-          {[
-            "Tailscale / SSH",
-            "Xvfb",
-            "Chrome",
-            "x11vnc",
-            "Daily Timer",
-            "PostgreSQL",
-            "API 容器",
-            "健康检查",
-            "就绪检查",
-            "BOSS 登录",
-            "最近 ETL",
-            "Telegram",
-            "微信公众号",
-          ].map((s) => (
-            <div className="check" key={s}>
-              <CheckCircle2 size={16} />
-              <span>{s}</span>
-              <b>通过</b>
+          {visibleChecks.map(({ label, result }) => (
+            <div className="check" key={label}>
+              {result?.status === "failed" ? <AlertTriangle size={16} /> : <CheckCircle2 size={16} />}
+              <span>{label}</span>
+              <b>{result?.status === "failed" ? "失败" : result ? "通过" : "暂无"}</b>
             </div>
           ))}
         </div>
-        <button className="primary">
+        <button className="primary" onClick={loadOperations} disabled={loading}>
           <RefreshCw size={16} />
-          重新执行检查
+          {loading ? "刷新中..." : "刷新检查结果"}
         </button>
       </Panel>
       <Panel title="运行记录">
-        <div className="row">
-          <span>服务器重启检查</span>
-          <span>2026-09-06 16:20</span>
-          <span>13 项</span>
-          <b className="success">成功</b>
-        </div>
+        {latestRun ? (
+          <div className="row">
+            <span>{latestRun.kind === "server_check" ? "服务器重启检查" : latestRun.kind}</span>
+            <span>{runTime}</span>
+            <span>{visibleChecks.length} 项</span>
+            <b className={latestRun.status === "succeeded" ? "success" : "muted"}>
+              {latestRun.status === "succeeded" ? "成功" : latestRun.status}
+            </b>
+          </div>
+        ) : (
+          <div className="row"><span>暂无运行记录</span></div>
+        )}
       </Panel>
     </>
   );
