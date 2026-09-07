@@ -16,7 +16,7 @@ router = APIRouter(prefix="/operations")
 def get_stage_statuses(connection=Depends(get_connection)):
     """返回八个阶段的定义和基于最近检查结果计算出的状态。"""
     try:
-        config_path = Path(__file__).parents[3] / "config" / "platform_stages.yaml"
+        config_path = Path.cwd() / "config" / "platform_stages.yaml"
         definitions = load_stage_definitions(config_path)
         checks = list_recent_checks(connection)
         snapshot = build_stage_snapshot(definitions, stage_evidence(checks))
