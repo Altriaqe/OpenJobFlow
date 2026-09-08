@@ -303,7 +303,7 @@ function Delivery({ authenticated }: { authenticated: boolean }) {
           status={statusFor("telegram")}
           loading={loading}
           authenticated={authenticated}
-          action={() => jobflowApi.sendTelegram(date).then(() => jobflowApi.deliveryStatuses(date).then(setStatuses))}
+          action={() => jobflowApi.sendTelegram(date).then((response) => jobflowApi.deliveryStatuses(date).then(setStatuses).then(() => response))}
         />
         <DeliveryCard
           title="微信公众号草稿"
@@ -314,7 +314,7 @@ function Delivery({ authenticated }: { authenticated: boolean }) {
           status={statusFor("wechat")}
           loading={loading}
           authenticated={authenticated}
-          action={() => jobflowApi.createWechatDraft(date).then(() => jobflowApi.deliveryStatuses(date).then(setStatuses))}
+          action={() => jobflowApi.createWechatDraft(date).then((response) => jobflowApi.deliveryStatuses(date).then(setStatuses).then(() => response))}
         />
       </div>
     </>
