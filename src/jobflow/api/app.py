@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from jobflow.api.analytics import router as analytics_router
+from jobflow.api.dashboard import router as dashboard_router
 from jobflow.api.health import router as health_router
 from jobflow.api.operations import router as operations_router
 from jobflow.api.reports import router as reports_router
@@ -32,6 +33,7 @@ def create_app() -> FastAPI:
     # 路由按职责拆分；这里仅负责注册，不承载业务逻辑。
     app.include_router(health_router)
     app.include_router(analytics_router)
+    app.include_router(dashboard_router)
     app.include_router(operations_router)
     app.include_router(reports_router)
     app.include_router(stages_router)

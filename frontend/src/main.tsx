@@ -28,6 +28,7 @@ import {
   jobflowApi,
   type CheckStatus,
   type CityJobCount,
+  type DashboardSummary,
   type OperationRun,
   type StageStatus,
 } from "./api";
@@ -151,12 +152,16 @@ function RecentRuns() {
 
 function LiveStageOverview() {
   const [stageRows, setStageRows] = useState<StageStatus[] | null>(null);
+  const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [stageError, setStageError] = useState(false);
-  useEffect(() => { jobflowApi.stageStatuses().then(setStageRows).catch(() => setStageError(true)); }, []);
+  const loadSummary = () => jobflowApi.dashboardSummary().then(setSummary).catch(() => setStageError(true));
+  useEffect(() => { loadSummary(); const timer = window.setInterval(loadSummary, 30000); return () => window.clearInterval(timer); }, []);
   const fallback = stages.map((name, index) => ({ id: String(index), name, goal: "", acceptance: "", state: "演示数据" }));
-  const rows = stageRows?.length ? stageRows : fallback;
+  const rows = summary?.stages?.length ? summary.stages : stageRows?.length ? stageRows : fallback;
   const accepted = rows.filter(item => item.state === "已验收" || item.state === "已完成").length;
-  return <><div className="metrics"><Metric label="阶段状态" value={`${accepted}/${rows.length}`} detail={stageError ? "阶段服务未连接" : "来自实时检查"} icon={<CheckCircle2/>}/><Metric label="今日岗位快照" value="180" detail="+35 较昨日" icon={<Database/>}/><Metric label="ETL 批次" value="4" detail="全部成功" icon={<Workflow/>}/><Metric label="渠道投放" value="2/2" detail="人工确认" icon={<Send/>}/></div><div className="two"><Panel title="每日采集量"><div className="chart">{[45,58,48,74,67,89,78].map((n,i)=><div className="bar-wrap" key={i}><i style={{height:`${n}%`}}/><small>{["09-01","09-02","09-03","09-04","09-05","09-06","今天"][i]}</small></div>)}</div></Panel><Panel title="阶段状态"><div className="stage-list">{rows.slice(0,5).map(item=><div className="stage" key={item.id}><span><i className={`dot ${item.state === "异常" ? "error" : ""}`}/>{item.name}</span><b className={`pill ${item.state === "异常" ? "danger" : ""}`}>{item.state}</b></div>)}</div><button className="link">查看全部阶段 <ChevronRight size={14}/></button></Panel></div><Panel title="最近运行"><RecentRuns/></Panel></>;
+  const metrics = summary?.metrics;
+  const channelCount = summary?.channels?.filter(item => item.status === "sent" || item.status === "created").length ?? 0;
+  return <><div className="metrics"><Metric label="阶段状态" value={`${accepted}/${rows.length}`} detail={stageError ? "监控服务未连接" : "来自实时检查"} icon={<CheckCircle2/>}/><Metric label="有效岗位总量" value={metrics ? String(metrics.job_count) : "-"} detail={metrics ? `${metrics.city_count} 个城市` : "读取中"} icon={<Database/>}/><Metric label="最近 ETL 批次" value={metrics?.batch_row_count == null ? "-" : String(metrics.batch_row_count)} detail={metrics?.batch_status === "succeeded" ? "执行成功" : metrics?.batch_status ?? "读取中"} icon={<Workflow/>}/><Metric label="渠道投放" value={`${channelCount}/2`} detail="来自渠道记录" icon={<Send/>}/></div><div className="two"><Panel title="每日采集量"><div className="chart"><div className="empty-chart">采集趋势接口待接入</div></div></Panel><Panel title="阶段状态"><div className="stage-list">{rows.slice(0,5).map(item=><div className="stage" key={item.id}><span><i className={`dot ${item.state === "异常" ? "error" : ""}`}/>{item.name}</span><b className={`pill ${item.state === "异常" ? "danger" : ""}`}>{item.state}</b></div>)}</div><button className="link" type="button">查看全部阶段 <ChevronRight size={14}/></button></Panel></div><Panel title="最近运行"><RecentRuns/></Panel></>;
 }
 
 function Operations() {

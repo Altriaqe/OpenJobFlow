@@ -22,6 +22,20 @@ export type OperationRun = {
   started_at: string;
   finished_at: string | null;
 };
+export type DashboardSummary = {
+  metrics: {
+    job_count: number;
+    city_count: number;
+    batch_row_count: number | null;
+    batch_status: string | null;
+  };
+  batch_finished_at: string | null;
+  stages: Array<{ id: string; name: string; state: string }>;
+  checks: Array<{ name: string; status: string; summary: string }>;
+  runs: Array<{ id: number; kind: string; status: string; started_at: string; finished_at: string | null }>;
+  channels: Array<{ channel: string; status: string; updated_at: string }>;
+  alerts: Array<{ level: string; title: string; detail: string }>;
+};
 
 const API_BASE_URL = (
   import.meta.env.VITE_API_BASE_URL ??
@@ -44,4 +58,5 @@ export const jobflowApi = {
   stageStatuses: () => get<StageStatus[]>("/operations/stages"),
   recentChecks: () => get<CheckStatus[]>("/operations/checks"),
   recentRuns: () => get<OperationRun[]>("/operations/runs"),
+  dashboardSummary: () => get<DashboardSummary>("/dashboard/summary"),
 };
