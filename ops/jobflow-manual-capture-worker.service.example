@@ -1,0 +1,15 @@
+[Unit]
+Description=JobFlow manual capture worker
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=altria
+WorkingDirectory=/home/altria/services/jobflow
+ExecStart=/home/altria/services/jobflow/ops/manual_capture_worker.sh
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -30,7 +30,7 @@ export DISPLAY="${DISPLAY:-:99}"
 KEYWORDS=("AI Agent" "Python开发" "Java开发" "数据分析")
 CITIES=("上海" "北京" "杭州" "深圳")
 PAGES=3
-SNAPSHOT_DATE="$(date +%F)"
+SNAPSHOT_DATE="${JOBFLOW_SNAPSHOT_DATE:-$(date +%F)}"
 WORK_DIR="$(mktemp -d /tmp/jobflow-daily.XXXXXX)"
 
 cleanup() {
@@ -391,6 +391,11 @@ if [[ "${#missing_indexes[@]}" -gt 0 ]]; then
     done
 else
     echo "四个关键词快照均已存在，跳过抓取"
+fi
+
+if [[ "${JOBFLOW_CAPTURE_ONLY:-false}" == "true" ]]; then
+    echo "当天快照抓取与 ETL 完成，按请求停止，不执行渠道投放"
+    exit 0
 fi
 
 echo "并行发送 Telegram 图文简报并生成微信公告文章包"
