@@ -34,6 +34,10 @@ def get_dashboard_summary(connection=Depends(get_connection)):
                ORDER BY updated_at DESC"""
         )
         channel_rows = cursor.fetchall()
+        latest_channels = {}
+        for channel, status, updated_at in channel_rows:
+            normalized = "wechat" if channel.startswith("wechat") else channel
+            latest_channels.setdefault(normalized, (status, updated_at))
         checks = list_recent_checks(connection)
         latest_checks = {}
         for item in checks:
@@ -75,8 +79,8 @@ def get_dashboard_summary(connection=Depends(get_connection)):
                 for row in runs
             ],
             "channels": [
-                {"channel": row[0], "status": row[1], "updated_at": row[2]}
-                for row in channel_rows
+                {"channel": channel, "status": row[0], "updated_at": row[1]}
+                for channel, row in latest_channels.items()
             ],
             "alerts": alerts,
         }

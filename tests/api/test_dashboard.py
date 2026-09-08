@@ -12,6 +12,7 @@ def test_dashboard_summary_returns_real_sections():
     cursor.fetchone.side_effect = [(12, 3), (5, "2026-09-07T10:00:00+00:00", "succeeded")]
     cursor.fetchall.side_effect = [
         [],
+        [("wechat_test_template", "sent", "2026-09-07T10:00:00+00:00")],
         [("health", "succeeded", "检查通过", None)],
         [],
     ]
@@ -27,3 +28,6 @@ def test_dashboard_summary_returns_real_sections():
     assert payload["metrics"]["job_count"] == 12
     assert len(payload["stages"]) == 8
     assert payload["alerts"] == []
+    assert payload["channels"] == [
+        {"channel": "wechat", "status": "sent", "updated_at": "2026-09-07T10:00:00+00:00"}
+    ]
