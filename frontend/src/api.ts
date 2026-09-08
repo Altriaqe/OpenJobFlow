@@ -54,8 +54,19 @@ const API_BASE_URL = (
 async function get<T>(path: string): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     headers: { Accept: "application/json" },
+    credentials: "include",
   });
   if (!response.ok) throw new Error(`JobFlow API ${response.status}`);
+  return response.json() as Promise<T>;
+}
+
+async function send<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...options,
+    credentials: "include",
+    headers: { Accept: "application/json", "Content-Type": "application/json", ...(options.headers ?? {}) },
+  });
+  if (!response.ok) throw new Error((await response.json().catch(() => null))?.detail ?? `JobFlow API ${response.status}`);
   return response.json() as Promise<T>;
 }
 
@@ -69,4 +80,10 @@ export const jobflowApi = {
   recentRuns: () => get<OperationRun[]>("/operations/runs"),
   dashboardSummary: () => get<DashboardSummary>("/dashboard/summary"),
   deliveryStatuses: (date: string) => get<DeliveryStatus[]>(`/dashboard/deliveries?snapshot_date=${date}`),
+  session: () => get<{ status: "authenticated" }>("/auth/session"),
+  login: (token: string) => send<{ status: string }>("/auth/login", { method: "POST", body: JSON.stringify({ token }) }),
+  logout: () => send<{ status: string }>("/auth/logout", { method: "POST" }),
+  runChecks: () => send<{ operation_id: number; status: string }>("/operations/checks/run", { method: "POST" }),
+  sendTelegram: (date: string) => send<{ status: string }>(`/reports/daily/multi/send?snapshot_date=${date}`, { method: "POST" }),
+  createWechatDraft: (date: string) => send<{ status: string }>(`/reports/daily/multi/wechat/draft/create?snapshot_date=${date}`, { method: "POST" }),
 };

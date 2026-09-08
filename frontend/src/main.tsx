@@ -56,6 +56,15 @@ const stages = [
 export default function App() {
   const [page, setPage] = useState<Page>("overview");
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [authenticated, setAuthenticated] = useState(false);
+  const [token, setToken] = useState("");
+  const [authError, setAuthError] = useState("");
+  useEffect(() => { jobflowApi.session().then(() => setAuthenticated(true)).catch(() => undefined); }, []);
+  const login = async () => {
+    setAuthError("");
+    try { await jobflowApi.login(token); setToken(""); setAuthenticated(true); }
+    catch { setAuthError("管理员 Token 无效"); }
+  };
   const current = nav.find(([id]) => id === page) ?? nav[0];
   return (
     <div className="app">
@@ -88,7 +97,7 @@ export default function App() {
         </nav>
         <div className="sidebar-bottom">
           <div className="user">
-            <span className="avatar">A</span>
+            {authenticated ? <button className="icon" title="退出管理员会话" onClick={() => jobflowApi.logout().finally(() => setAuthenticated(false))}><ShieldCheck size={16} /></button> : <input aria-label="管理员 Token" type="password" placeholder="管理员 Token" value={token} onChange={(event) => setToken(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void login(); }} />}
             <span>
               <b>管理员</b>
               <small>安全会话</small>
@@ -134,8 +143,9 @@ export default function App() {
             </span>
           </div>
           {page === "overview" && <LiveStageOverview />}
-          {page === "operations" && <Operations />}
-          {page === "delivery" && <Delivery />}
+          {authError && <div className="notice"><AlertTriangle size={18} /><span>{authError}</span></div>}
+          {page === "operations" && <Operations authenticated={authenticated} />}
+          {page === "delivery" && <Delivery authenticated={authenticated} />}
           {page === "analytics" && <Analytics />}
           {page === "alerts" && <Alerts />}
         </div>
@@ -143,10 +153,6 @@ export default function App() {
     </div>
   );
 }
-function RecentRuns() {
-  return <div className="table"><div className="row head"><span>操作</span><span>触发时间</span><span>耗时</span><span>状态</span></div>{[["服务器重启检查","今天 16:20","18s"],["每日恢复运行","今天 16:32","06m 18s"],["微信公众号草稿","今天 16:38","41s"]].map(row=><div className="row" key={row[0]}><span>{row[0]}</span><span>{row[1]}</span><span>{row[2]}</span><b className="success">{row[0] === "微信公众号草稿" ? "已创建" : "成功"}</b></div>)}</div>;
-}
-
 function LiveRecentRuns({ summary }: { summary: DashboardSummary | null }) {
   const runs = summary?.runs ?? [];
   if (!runs.length) return <div className="row"><span>暂无运行记录</span></div>;
@@ -154,13 +160,11 @@ function LiveRecentRuns({ summary }: { summary: DashboardSummary | null }) {
 }
 
 function LiveStageOverview() {
-  const [stageRows, setStageRows] = useState<StageStatus[] | null>(null);
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [stageError, setStageError] = useState(false);
   const loadSummary = () => jobflowApi.dashboardSummary().then(setSummary).catch(() => setStageError(true));
   useEffect(() => { loadSummary(); const timer = window.setInterval(loadSummary, 30000); return () => window.clearInterval(timer); }, []);
-  const fallback = stages.map((name, index) => ({ id: String(index), name, goal: "", acceptance: "", state: "演示数据" }));
-  const rows = summary?.stages?.length ? summary.stages : stageRows?.length ? stageRows : fallback;
+  const rows = summary?.stages ?? [];
   const accepted = rows.filter(item => item.state === "已验收" || item.state === "已完成").length;
   const metrics = summary?.metrics;
   const channelCount = summary?.channels?.filter(item => item.status === "sent" || item.status === "created").length ?? 0;
@@ -169,7 +173,7 @@ function LiveStageOverview() {
   return <><div className="metrics"><Metric label="阶段状态" value={`${accepted}/${rows.length}`} detail={stageError ? "监控服务未连接" : "来自实时检查"} icon={<CheckCircle2/>}/><Metric label="有效岗位总量" value={metrics ? String(metrics.job_count) : "-"} detail={metrics ? `${metrics.city_count} 个城市` : "读取中"} icon={<Database/>}/><Metric label="最近 ETL 批次" value={metrics?.batch_row_count == null ? "-" : String(metrics.batch_row_count)} detail={metrics?.batch_status === "succeeded" ? "执行成功" : metrics?.batch_status ?? "读取中"} icon={<Workflow/>}/><Metric label="渠道投放" value={`${channelCount}/2`} detail="来自渠道记录" icon={<Send/>}/></div><div className="two"><Panel title="每日采集量"><div className="chart">{trend.length ? trend.map(item => <div className="bar-wrap" key={item.id}><i style={{height:`${Math.max(8, Math.round(item.row_count / maxTrend * 100))}%`}}/><small>{item.finished_at ? new Date(item.finished_at).toLocaleDateString("zh-CN", {month:"2-digit", day:"2-digit"}) : "-"}</small></div>) : <div className="empty-chart">暂无采集批次</div>}</div></Panel><Panel title="阶段状态"><div className="stage-list">{rows.slice(0,5).map(item=><div className="stage" key={item.id}><span><i className={`dot ${item.state === "异常" ? "error" : ""}`}/>{item.name}</span><b className={`pill ${item.state === "异常" ? "danger" : ""}`}>{item.state}</b></div>)}</div><button className="link" type="button">查看全部阶段 <ChevronRight size={14}/></button></Panel></div><Panel title="最近运行"><LiveRecentRuns summary={summary}/></Panel></>;
 }
 
-function Operations() {
+function Operations({ authenticated }: { authenticated: boolean }) {
   const [checks, setChecks] = useState<CheckStatus[] | null>(null);
   const [runs, setRuns] = useState<OperationRun[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -184,6 +188,13 @@ function Operations() {
       })
       .catch(() => setError(true))
       .finally(() => setLoading(false));
+  };
+  const runChecks = async () => {
+    if (!authenticated || !window.confirm("确认执行服务器重启检查？此操作只检查状态，不会投放报告。")) return;
+    setLoading(true);
+    try { await jobflowApi.runChecks(); }
+    catch { setError(true); }
+    finally { loadOperations(); }
   };
   useEffect(loadOperations, []);
   const checkNames = [
@@ -240,9 +251,9 @@ function Operations() {
             </div>
           ))}
         </div>
-        <button className="primary" onClick={loadOperations} disabled={loading}>
+        <button className="primary" onClick={authenticated ? runChecks : undefined} disabled={loading || !authenticated}>
           <RefreshCw size={16} />
-          {loading ? "刷新中..." : "刷新检查结果"}
+          {loading ? "执行中..." : authenticated ? "执行服务器检查" : "登录后执行检查"}
         </button>
       </Panel>
       <Panel title="运行记录">
@@ -262,7 +273,7 @@ function Operations() {
     </>
   );
 }
-function Delivery() {
+function Delivery({ authenticated }: { authenticated: boolean }) {
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [statuses, setStatuses] = useState<DeliveryStatus[]>([]);
   const [loading, setLoading] = useState(false);
@@ -289,6 +300,8 @@ function Delivery() {
           onDateChange={setDate}
           status={statusFor("telegram")}
           loading={loading}
+          authenticated={authenticated}
+          action={() => jobflowApi.sendTelegram(date).then(() => jobflowApi.deliveryStatuses(date).then(setStatuses))}
         />
         <DeliveryCard
           title="微信公众号草稿"
@@ -297,12 +310,22 @@ function Delivery() {
           onDateChange={setDate}
           status={statusFor("wechat")}
           loading={loading}
+          authenticated={authenticated}
+          action={() => jobflowApi.createWechatDraft(date).then(() => jobflowApi.deliveryStatuses(date).then(setStatuses))}
         />
       </div>
     </>
   );
 }
-function DeliveryCard({ title, text, date, onDateChange, status, loading }: { title: string; text: string; date: string; onDateChange: (date: string) => void; status?: DeliveryStatus; loading: boolean }) {
+function DeliveryCard({ title, text, date, onDateChange, status, loading, authenticated, action }: { title: string; text: string; date: string; onDateChange: (date: string) => void; status?: DeliveryStatus; loading: boolean; authenticated: boolean; action: () => Promise<unknown> }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const execute = () => {
+    if (!window.confirm(`确认执行“${title}”，日期：${date}？`)) return;
+    setError("");
+    setBusy(true);
+    action().catch((reason: Error) => setError(reason.message || "操作失败")).finally(() => setBusy(false));
+  };
   return (
     <div className="delivery-card">
       <Send className="delivery-icon" size={20} />
@@ -315,10 +338,11 @@ function DeliveryCard({ title, text, date, onDateChange, status, loading }: { ti
       <p>{text}</p>
       <div className="controls">
         <input type="date" value={date} onChange={(event) => onDateChange(event.target.value)} />
-        <button className="primary" type="button" disabled>
-          需管理员鉴权
+        <button className="primary" type="button" disabled={!authenticated || busy} onClick={execute}>
+          {busy ? "执行中..." : authenticated ? "确认执行" : "登录后执行"}
         </button>
       </div>
+      {error && <small className="error-text">{error}</small>}
     </div>
   );
 }

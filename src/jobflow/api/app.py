@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from jobflow.api.analytics import router as analytics_router
+from jobflow.api.auth import router as auth_router
 from jobflow.api.dashboard import router as dashboard_router
 from jobflow.api.health import router as health_router
 from jobflow.api.operations import router as operations_router
@@ -26,12 +27,13 @@ def create_app() -> FastAPI:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=origins,
-        allow_credentials=False,
-        allow_methods=["GET"],
+        allow_credentials=True,
+        allow_methods=["GET", "POST"],
         allow_headers=["Content-Type"],
     )
     # 路由按职责拆分；这里仅负责注册，不承载业务逻辑。
     app.include_router(health_router)
+    app.include_router(auth_router)
     app.include_router(analytics_router)
     app.include_router(dashboard_router)
     app.include_router(operations_router)

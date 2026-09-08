@@ -6,11 +6,12 @@ import secrets
 from datetime import date
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Cookie, Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from jobflow.ai.openai_summary import OpenAIConfigurationError, OpenAISummaryError
 from jobflow.api.analytics import get_connection
+from jobflow.api.auth import SESSION_COOKIE, _valid_session
 from jobflow.channels.telegram import (
     TelegramConfigurationError,
     TelegramDeliveryError,
@@ -101,11 +102,12 @@ def get_wechat_draft_status_reader():
 
 def require_report_token(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer),
+    session: str | None = Cookie(default=None, alias=SESSION_COOKIE),
 ) -> None:
     """校验报告接口 Bearer Token；失败只返回通用鉴权错误。"""
     expected = os.getenv("REPORT_TRIGGER_TOKEN")
     provided = credentials.credentials if credentials else ""
-    if not expected or not secrets.compare_digest(provided, expected):
+    if (not expected or not secrets.compare_digest(provided, expected)) and not _valid_session(session):
         raise HTTPException(status_code=401, detail="invalid report trigger token")
 
 
