@@ -23,12 +23,22 @@ def get_dashboard_summary(connection=Depends(get_connection)):
         )
         batch = cursor.fetchone()
         cursor.execute(
+            """SELECT id, row_count, finished_at, status
+               FROM ops.batches
+               ORDER BY id DESC LIMIT 7"""
+        )
+        batch_trend = cursor.fetchall()
+        cursor.execute(
             """SELECT channel, status, updated_at
                FROM ops.report_channel_deliveries
                ORDER BY updated_at DESC"""
         )
         channel_rows = cursor.fetchall()
         checks = list_recent_checks(connection)
+        latest_checks = {}
+        for item in checks:
+            latest_checks.setdefault(item.name, item)
+        checks = tuple(latest_checks.values())
         runs = list_recent_runs(connection, limit=10)
         definitions = load_stage_definitions(Path.cwd() / "config" / "platform_stages.yaml")
         stages = build_stage_snapshot(definitions, stage_evidence(checks))
@@ -45,6 +55,10 @@ def get_dashboard_summary(connection=Depends(get_connection)):
                 "batch_status": None if batch is None else batch[2],
             },
             "batch_finished_at": None if batch is None else batch[1],
+            "trend": [
+                {"id": row[0], "row_count": row[1], "finished_at": row[2], "status": row[3]}
+                for row in reversed(batch_trend)
+            ],
             "stages": [
                 {"id": item.definition.id, "name": item.definition.name, "state": item.state.value}
                 for item in stages

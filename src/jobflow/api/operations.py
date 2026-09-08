@@ -11,6 +11,10 @@ router = APIRouter(prefix="/operations")
 @router.get("/checks")
 def get_recent_checks(connection=Depends(get_connection)):
     try:
+        checks = list_recent_checks(connection)
+        latest_by_name = {}
+        for item in checks:
+            latest_by_name.setdefault(item.name, item)
         return [
             {
                 "name": item.name,
@@ -18,7 +22,7 @@ def get_recent_checks(connection=Depends(get_connection)):
                 "summary": item.summary,
                 "error": item.error,
             }
-            for item in list_recent_checks(connection)
+            for item in latest_by_name.values()
         ]
     except Exception as exc:
         raise HTTPException(status_code=503, detail="operation checks unavailable") from exc

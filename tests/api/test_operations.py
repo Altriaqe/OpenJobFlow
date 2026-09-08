@@ -24,6 +24,25 @@ def test_operation_checks_returns_recent_checks():
     ]
 
 
+def test_operation_checks_keeps_latest_result_per_check():
+    connection = Mock()
+    connection.cursor.return_value.fetchall.return_value = [
+        ("telegram", "succeeded", "最新通过", None),
+        ("telegram", "failed", "旧记录", "old"),
+    ]
+    app = create_app()
+    app.dependency_overrides[get_connection] = lambda: connection
+    try:
+        response = TestClient(app).get("/operations/checks")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert response.json() == [
+        {"name": "telegram", "status": "succeeded", "summary": "最新通过", "error": None}
+    ]
+
+
 def test_operation_runs_returns_recent_runs():
     connection = Mock()
     connection.cursor.return_value.fetchall.return_value = [

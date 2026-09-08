@@ -32,7 +32,10 @@ def build_stage_snapshot(
 
 def stage_evidence(last_checks: Sequence[CheckResult]) -> dict[str, StageEvidence]:
     """将最近一次服务器检查结果转换为八个阶段的统一证据。"""
-    statuses = {item.name: item.status for item in last_checks}
+    # 查询按时间倒序；同名检查只保留最近一次，避免旧记录覆盖新状态。
+    statuses = {}
+    for item in last_checks:
+        statuses.setdefault(item.name, item.status)
     evidence = {
         stage_id: StageEvidence()
         for stage_id in (
