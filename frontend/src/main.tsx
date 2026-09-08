@@ -320,11 +320,13 @@ function Delivery({ authenticated }: { authenticated: boolean }) {
 function DeliveryCard({ title, text, date, onDateChange, status, loading, authenticated, action }: { title: string; text: string; date: string; onDateChange: (date: string) => void; status?: DeliveryStatus; loading: boolean; authenticated: boolean; action: () => Promise<unknown> }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [result, setResult] = useState("");
   const execute = () => {
     if (!window.confirm(`确认执行“${title}”，日期：${date}？`)) return;
     setError("");
+    setResult("");
     setBusy(true);
-    action().catch((reason: Error) => setError(reason.message || "操作失败")).finally(() => setBusy(false));
+    action().then(() => setResult("操作已完成")).catch((reason: Error) => setError(reason.message || "操作失败")).finally(() => setBusy(false));
   };
   return (
     <div className="delivery-card">
@@ -339,10 +341,11 @@ function DeliveryCard({ title, text, date, onDateChange, status, loading, authen
       <div className="controls">
         <input type="date" value={date} onChange={(event) => onDateChange(event.target.value)} />
         <button className="primary" type="button" disabled={!authenticated || busy} onClick={execute}>
-          {busy ? "执行中..." : authenticated ? "确认执行" : "登录后执行"}
+          {busy ? "执行中..." : result || (authenticated ? "确认执行" : "登录后执行")}
         </button>
       </div>
       {error && <small className="error-text">{error}</small>}
+      {result && <small className="success-text">{result}</small>}
     </div>
   );
 }
