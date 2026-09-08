@@ -9,10 +9,15 @@ from jobflow.api.dependencies import get_connection
 def test_dashboard_summary_returns_real_sections():
     connection = Mock()
     cursor = connection.cursor.return_value
-    cursor.fetchone.side_effect = [(12, 3), (5, "2026-09-07T10:00:00+00:00", "succeeded")]
+    cursor.fetchone.side_effect = [
+        (12, 3),
+        (5, "2026-09-07T10:00:00+00:00", "succeeded"),
+        (1, 1),
+    ]
     cursor.fetchall.side_effect = [
         [],
         [("wechat_test_template", "sent", "2026-09-07T10:00:00+00:00")],
+        [],
         [("health", "succeeded", "检查通过", None)],
         [],
     ]

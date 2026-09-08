@@ -29,6 +29,7 @@ import {
   type CheckStatus,
   type CityJobCount,
   type DashboardSummary,
+  type DeliveryStatus,
   type OperationRun,
   type StageStatus,
 } from "./api";
@@ -86,10 +87,6 @@ export default function App() {
           ))}
         </nav>
         <div className="sidebar-bottom">
-          <button className="nav">
-            <Settings2 size={17} />
-            <span>系统设置</span>
-          </button>
           <div className="user">
             <span className="avatar">A</span>
             <span>
@@ -118,7 +115,7 @@ export default function App() {
               <i />
               系统在线
             </span>
-            <button className="icon">
+            <button className="icon" onClick={() => window.location.reload()} title="刷新全部数据">
               <RefreshCw size={16} />
             </button>
             <span className="avatar">A</span>
@@ -131,10 +128,10 @@ export default function App() {
               <h1>{current[1]}</h1>
               <p>统一查看数据链路、运行状态与渠道投放结果</p>
             </div>
-            <button className="time">
+            <span className="time">
               <Clock3 size={15} />
-              最近 24 小时⌄
-            </button>
+              每 30 秒自动刷新
+            </span>
           </div>
           {page === "overview" && <LiveStageOverview />}
           {page === "operations" && <Operations />}
@@ -150,6 +147,12 @@ function RecentRuns() {
   return <div className="table"><div className="row head"><span>操作</span><span>触发时间</span><span>耗时</span><span>状态</span></div>{[["服务器重启检查","今天 16:20","18s"],["每日恢复运行","今天 16:32","06m 18s"],["微信公众号草稿","今天 16:38","41s"]].map(row=><div className="row" key={row[0]}><span>{row[0]}</span><span>{row[1]}</span><span>{row[2]}</span><b className="success">{row[0] === "微信公众号草稿" ? "已创建" : "成功"}</b></div>)}</div>;
 }
 
+function LiveRecentRuns({ summary }: { summary: DashboardSummary | null }) {
+  const runs = summary?.runs ?? [];
+  if (!runs.length) return <div className="row"><span>暂无运行记录</span></div>;
+  return <div className="table"><div className="row head"><span>操作</span><span>触发时间</span><span>状态</span></div>{runs.slice(0, 5).map(run => <div className="row" key={run.id}><span>{run.kind === "server_check" ? "服务器重启检查" : "恢复运行"}</span><span>{new Date(run.started_at).toLocaleString("zh-CN")}</span><b className={run.status === "succeeded" ? "success" : "muted"}>{run.status === "succeeded" ? "成功" : run.status}</b></div>)}</div>;
+}
+
 function LiveStageOverview() {
   const [stageRows, setStageRows] = useState<StageStatus[] | null>(null);
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
@@ -161,7 +164,9 @@ function LiveStageOverview() {
   const accepted = rows.filter(item => item.state === "已验收" || item.state === "已完成").length;
   const metrics = summary?.metrics;
   const channelCount = summary?.channels?.filter(item => item.status === "sent" || item.status === "created").length ?? 0;
-  return <><div className="metrics"><Metric label="阶段状态" value={`${accepted}/${rows.length}`} detail={stageError ? "监控服务未连接" : "来自实时检查"} icon={<CheckCircle2/>}/><Metric label="有效岗位总量" value={metrics ? String(metrics.job_count) : "-"} detail={metrics ? `${metrics.city_count} 个城市` : "读取中"} icon={<Database/>}/><Metric label="最近 ETL 批次" value={metrics?.batch_row_count == null ? "-" : String(metrics.batch_row_count)} detail={metrics?.batch_status === "succeeded" ? "执行成功" : metrics?.batch_status ?? "读取中"} icon={<Workflow/>}/><Metric label="渠道投放" value={`${channelCount}/2`} detail="来自渠道记录" icon={<Send/>}/></div><div className="two"><Panel title="每日采集量"><div className="chart"><div className="empty-chart">采集趋势接口待接入</div></div></Panel><Panel title="阶段状态"><div className="stage-list">{rows.slice(0,5).map(item=><div className="stage" key={item.id}><span><i className={`dot ${item.state === "异常" ? "error" : ""}`}/>{item.name}</span><b className={`pill ${item.state === "异常" ? "danger" : ""}`}>{item.state}</b></div>)}</div><button className="link" type="button">查看全部阶段 <ChevronRight size={14}/></button></Panel></div><Panel title="最近运行"><RecentRuns/></Panel></>;
+  const trend = summary?.trend ?? [];
+  const maxTrend = Math.max(...trend.map(item => item.row_count), 1);
+  return <><div className="metrics"><Metric label="阶段状态" value={`${accepted}/${rows.length}`} detail={stageError ? "监控服务未连接" : "来自实时检查"} icon={<CheckCircle2/>}/><Metric label="有效岗位总量" value={metrics ? String(metrics.job_count) : "-"} detail={metrics ? `${metrics.city_count} 个城市` : "读取中"} icon={<Database/>}/><Metric label="最近 ETL 批次" value={metrics?.batch_row_count == null ? "-" : String(metrics.batch_row_count)} detail={metrics?.batch_status === "succeeded" ? "执行成功" : metrics?.batch_status ?? "读取中"} icon={<Workflow/>}/><Metric label="渠道投放" value={`${channelCount}/2`} detail="来自渠道记录" icon={<Send/>}/></div><div className="two"><Panel title="每日采集量"><div className="chart">{trend.length ? trend.map(item => <div className="bar-wrap" key={item.id}><i style={{height:`${Math.max(8, Math.round(item.row_count / maxTrend * 100))}%`}}/><small>{item.finished_at ? new Date(item.finished_at).toLocaleDateString("zh-CN", {month:"2-digit", day:"2-digit"}) : "-"}</small></div>) : <div className="empty-chart">暂无采集批次</div>}</div></Panel><Panel title="阶段状态"><div className="stage-list">{rows.slice(0,5).map(item=><div className="stage" key={item.id}><span><i className={`dot ${item.state === "异常" ? "error" : ""}`}/>{item.name}</span><b className={`pill ${item.state === "异常" ? "danger" : ""}`}>{item.state}</b></div>)}</div><button className="link" type="button">查看全部阶段 <ChevronRight size={14}/></button></Panel></div><Panel title="最近运行"><LiveRecentRuns summary={summary}/></Panel></>;
 }
 
 function Operations() {
@@ -258,6 +263,14 @@ function Operations() {
   );
 }
 function Delivery() {
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [statuses, setStatuses] = useState<DeliveryStatus[]>([]);
+  const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    setLoading(true);
+    jobflowApi.deliveryStatuses(date).then(setStatuses).finally(() => setLoading(false));
+  }, [date]);
+  const statusFor = (channel: string) => statuses.find((item) => item.channel === channel);
   return (
     <>
       <div className="delivery-banner">
@@ -272,28 +285,38 @@ function Delivery() {
         <DeliveryCard
           title="Telegram 投放"
           text="发送指定日期的文字简报和趋势图片。"
+          date={date}
+          onDateChange={setDate}
+          status={statusFor("telegram")}
+          loading={loading}
         />
         <DeliveryCard
           title="微信公众号草稿"
           text="创建指定日期的公众号草稿，不自动发布。"
+          date={date}
+          onDateChange={setDate}
+          status={statusFor("wechat")}
+          loading={loading}
         />
       </div>
     </>
   );
 }
-function DeliveryCard({ title, text }: { title: string; text: string }) {
+function DeliveryCard({ title, text, date, onDateChange, status, loading }: { title: string; text: string; date: string; onDateChange: (date: string) => void; status?: DeliveryStatus; loading: boolean }) {
   return (
     <div className="delivery-card">
       <Send className="delivery-icon" size={20} />
       <div className="card-title">
         <h3>{title}</h3>
-        <b className="pill">已验收</b>
+        <b className={`pill ${status?.status === "failed" ? "danger" : ""}`}>
+          {loading ? "读取中" : status?.status ?? "暂无记录"}
+        </b>
       </div>
       <p>{text}</p>
       <div className="controls">
-        <input type="date" defaultValue="2026-09-06" />
+        <input type="date" value={date} onChange={(event) => onDateChange(event.target.value)} />
         <button className="primary" type="button" disabled>
-          待接入
+          需管理员鉴权
         </button>
       </div>
     </div>
@@ -356,58 +379,51 @@ function Empty({ title, icon }: { title: string; icon: React.ReactNode }) {
 }
 
 function Analytics() {
-  const [cities, setCities] = useState<CityJobCount[] | null>(null);
+  const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [apiError, setApiError] = useState(false);
   useEffect(() => {
-    jobflowApi
-      .cityJobCounts(5)
-      .then(setCities)
-      .catch(() => setApiError(true));
+    const load = () => jobflowApi.dashboardSummary().then(setSummary).catch(() => setApiError(true));
+    load();
+    const timer = window.setInterval(load, 30000);
+    return () => window.clearInterval(timer);
   }, []);
-  const fallback = [
-    { city: "上海", job_count: 286 },
-    { city: "北京", job_count: 241 },
-    { city: "深圳", job_count: 198 },
-    { city: "杭州", job_count: 156 },
-    { city: "广州", job_count: 124 },
-  ];
-  const cityRows = cities?.length ? cities : fallback;
+  const cityRows = summary?.city_counts ?? [];
   const max = Math.max(...cityRows.map((item) => item.job_count));
   return (
     <>
       <div className="metrics">
         <Metric
           label="有效岗位总量"
-          value="1,248"
+          value={summary ? String(summary.metrics.job_count) : "-"}
           detail={apiError ? "分析服务未连接" : "来自实时聚合"}
           icon={<Database />}
         />
         <Metric
           label="城市覆盖"
-          value={String(cityRows.length)}
+          value={summary ? String(summary.metrics.city_count) : "-"}
           detail="当前展示 Top 5"
           icon={<MapPin />}
         />
         <Metric
           label="平均处理耗时"
-          value="6m 18s"
-          detail="较昨日 -14.2%"
+          value="暂无"
+          detail="处理时长指标未接入"
           icon={<Clock3 />}
         />
         <Metric
           label="报告打开率"
-          value="78.4%"
-          detail="较上周 +5.6%"
+          value="暂无"
+          detail="打开率指标未接入"
           icon={<ArrowUpRight />}
         />
       </div>
       <div className="two">
         <Panel title="岗位趋势">
           <div className="chart analytics-chart">
-            {[48, 61, 54, 73, 66, 82, 76, 92, 87, 96].map((n, i) => (
-              <div className="bar-wrap" key={i}>
-                <i style={{ height: `${n}%` }} />
-                <small>{i + 1}</small>
+            {(summary?.trend ?? []).map((item) => (
+              <div className="bar-wrap" key={item.id}>
+                <i style={{ height: `${Math.max(8, Math.round((item.row_count / Math.max(...(summary?.trend ?? []).map((entry) => entry.row_count), 1)) * 100))}%` }} />
+                <small>{item.finished_at ? new Date(item.finished_at).toLocaleDateString("zh-CN", { month: "2-digit", day: "2-digit" }) : "-"}</small>
               </div>
             ))}
           </div>
@@ -441,16 +457,12 @@ function Analytics() {
             <span>成功率</span>
             <span>最近状态</span>
           </div>
-          {[
-            ["Telegram", "28", "100%", "稳定"],
-            ["微信公众号", "24", "100%", "草稿已创建"],
-            ["日报邮件", "0", "-", "未接入"],
-          ].map((r) => (
-            <div className="row" key={r[0]}>
-              <span>{r[0]}</span>
-              <span>{r[1]}</span>
-              <span>{r[2]}</span>
-              <b className={r[3] === "未接入" ? "muted" : "success"}>{r[3]}</b>
+          {(summary?.channels ?? []).map((channel) => (
+            <div className="row" key={channel.channel}>
+              <span>{channel.channel === "telegram" ? "Telegram" : "微信公众号"}</span>
+              <span>{summary?.delivery_totals.total ?? 0}</span>
+              <span>{summary ? `${summary.delivery_totals.total ? Math.round(summary.delivery_totals.successful / summary.delivery_totals.total * 100) : 0}%` : "-"}</span>
+              <b className={channel.status === "failed" ? "muted" : "success"}>{channel.status}</b>
             </div>
           ))}
         </div>
@@ -459,76 +471,58 @@ function Analytics() {
   );
 }
 function Alerts() {
+  const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  useEffect(() => {
+    const load = () => jobflowApi.dashboardSummary().then(setSummary).catch(() => undefined);
+    load();
+    const timer = window.setInterval(load, 30000);
+    return () => window.clearInterval(timer);
+  }, []);
+  const alerts = summary?.alerts ?? [];
   return (
     <>
       <div className="alert-summary">
         <div>
           <CircleAlert size={20} />
           <span>
-            <b>0</b>
+            <b>{alerts.length}</b>
             <small>未处理告警</small>
           </span>
         </div>
         <div>
           <AlertTriangle size={20} />
           <span>
-            <b>2</b>
+            <b>{alerts.length}</b>
             <small>今日观察项</small>
           </span>
         </div>
         <div>
           <CheckCircle2 size={20} />
           <span>
-            <b>18</b>
+            <b>{summary?.runs.filter((run) => run.status === "succeeded").length ?? 0}</b>
             <small>本周已处理</small>
           </span>
         </div>
       </div>
       <Panel title="告警记录" action="全部记录">
         <div className="alert-list">
-          {[
-            [
-              "观察",
-              "BOSS 登录状态需人工确认",
-              "服务器重启检查 · 今天 16:20",
-              "观察",
-            ],
-            [
-              "已处理",
-              "昨日 ETL 批次耗时高于平均值",
-              "ETL 处理 · 昨天 23:18",
-              "已处理",
-            ],
-            [
-              "信息",
-              "微信公众号草稿等待人工发布",
-              "微信公众号投放 · 09-04 16:40",
-              "信息",
-            ],
-          ].map(([level, title, meta, status]) => (
+          {alerts.map(({ level, title, detail }) => (
             <div className="alert" key={title}>
               <span
-                className={`alert-icon ${level === "观察" ? "watch" : level === "已处理" ? "done" : "info"}`}
+                className="alert-icon watch"
               >
-                {level === "信息" ? (
-                  <Info size={17} />
-                ) : level === "已处理" ? (
-                  <CheckCircle2 size={17} />
-                ) : (
-                  <AlertTriangle size={17} />
-                )}
+                <AlertTriangle size={17} />
               </span>
               <span className="alert-copy">
                 <b>{title}</b>
-                <small>{meta}</small>
+                <small>{detail}</small>
               </span>
-              <b className={status === "已处理" ? "success" : "muted"}>
-                {status}
-              </b>
+              <b className="muted">未处理</b>
               <ChevronRight size={15} className="muted" />
             </div>
           ))}
         </div>
+        {!alerts.length && <div className="empty-inline">当前没有未处理告警</div>}
       </Panel>
     </>
   );
