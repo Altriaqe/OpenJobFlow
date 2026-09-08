@@ -45,6 +45,11 @@ from jobflow.reports.wechat_service import (
 )
 from jobflow.reports.wechat_draft_service import create_wechat_draft_from_article
 from jobflow.db.wechat_drafts import get_wechat_draft_status
+from jobflow.operations.manual_capture import (
+    TodayCaptureFailed,
+    TodayCaptureNotConfigured,
+    capture_today,
+)
 
 router = APIRouter(prefix="/reports")
 bearer = HTTPBearer(auto_error=False)
@@ -188,10 +193,23 @@ def send_multi_daily_snapshot_report(
     report_sender=Depends(get_multi_daily_report_sender),
 ):
     """触发多关键词图文日报，保留投递结果不确定的人工恢复语义。"""
+    if snapshot_date > date.today():
+        raise HTTPException(status_code=422, detail="无法抓取未来日期")
     try:
         return report_sender(connection, snapshot_date=snapshot_date)
     except MultiKeywordSnapshotMissing as exc:
-        raise HTTPException(status_code=409, detail="daily snapshots incomplete") from exc
+        if snapshot_date != date.today():
+            raise HTTPException(status_code=409, detail="历史日期没有已抓取快照") from exc
+        try:
+            capture_today(snapshot_date)
+        except TodayCaptureNotConfigured as capture_exc:
+            raise HTTPException(status_code=503, detail="当天未抓取，服务器未配置抓取命令") from capture_exc
+        except TodayCaptureFailed as capture_exc:
+            raise HTTPException(status_code=502, detail="当天抓取失败，未执行投放") from capture_exc
+        try:
+            return report_sender(connection, snapshot_date=snapshot_date)
+        except MultiKeywordSnapshotMissing as retry_exc:
+            raise HTTPException(status_code=502, detail="当天抓取完成但快照仍不完整，未执行投放") from retry_exc
     except MultiKeywordDeliveryStateError as exc:
         raise HTTPException(
             status_code=409,

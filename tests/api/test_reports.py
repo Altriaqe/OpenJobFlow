@@ -356,8 +356,24 @@ def test_multi_daily_send_maps_incomplete_snapshots_to_409(monkeypatch) -> None:
         app.dependency_overrides.clear()
 
     assert response.status_code == 409
-    assert response.json() == {"detail": "daily snapshots incomplete"}
+    assert response.json() == {"detail": "历史日期没有已抓取快照"}
     assert "数据分析" not in str(response.json())
+
+
+def test_multi_daily_send_rejects_future_date(monkeypatch) -> None:
+    sender = Mock()
+    client, app = multi_daily_client(monkeypatch, sender)
+    try:
+        response = client.post(
+            "/reports/daily/multi/send?snapshot_date=2099-01-01",
+            headers={"Authorization": "Bearer test-trigger-token"},
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 422
+    assert response.json() == {"detail": "无法抓取未来日期"}
+    sender.assert_not_called()
 
 
 def test_multi_daily_send_maps_manual_state_to_409(monkeypatch) -> None:

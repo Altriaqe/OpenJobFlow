@@ -274,7 +274,8 @@ function Operations({ authenticated }: { authenticated: boolean }) {
   );
 }
 function Delivery({ authenticated }: { authenticated: boolean }) {
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const today = new Date().toISOString().slice(0, 10);
+  const [date, setDate] = useState(today);
   const [statuses, setStatuses] = useState<DeliveryStatus[]>([]);
   const [loading, setLoading] = useState(false);
   useEffect(() => {
@@ -297,6 +298,7 @@ function Delivery({ authenticated }: { authenticated: boolean }) {
           title="Telegram 投放"
           text="发送指定日期的文字简报和趋势图片。"
           date={date}
+          maxDate={today}
           onDateChange={setDate}
           status={statusFor("telegram")}
           loading={loading}
@@ -307,6 +309,7 @@ function Delivery({ authenticated }: { authenticated: boolean }) {
           title="微信公众号草稿"
           text="创建指定日期的公众号草稿，不自动发布。"
           date={date}
+          maxDate={today}
           onDateChange={setDate}
           status={statusFor("wechat")}
           loading={loading}
@@ -317,7 +320,7 @@ function Delivery({ authenticated }: { authenticated: boolean }) {
     </>
   );
 }
-function DeliveryCard({ title, text, date, onDateChange, status, loading, authenticated, action }: { title: string; text: string; date: string; onDateChange: (date: string) => void; status?: DeliveryStatus; loading: boolean; authenticated: boolean; action: () => Promise<unknown> }) {
+function DeliveryCard({ title, text, date, maxDate, onDateChange, status, loading, authenticated, action }: { title: string; text: string; date: string; maxDate: string; onDateChange: (date: string) => void; status?: DeliveryStatus; loading: boolean; authenticated: boolean; action: () => Promise<unknown> }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState("");
@@ -339,7 +342,7 @@ function DeliveryCard({ title, text, date, onDateChange, status, loading, authen
       </div>
       <p>{text}</p>
       <div className="controls">
-        <input type="date" value={date} onChange={(event) => onDateChange(event.target.value)} />
+        <input type="date" value={date} max={maxDate} onChange={(event) => onDateChange(event.target.value)} />
         <button className="primary" type="button" disabled={!authenticated || busy} onClick={execute}>
           {busy ? "执行中..." : result || (authenticated ? "确认执行" : "登录后执行")}
         </button>
