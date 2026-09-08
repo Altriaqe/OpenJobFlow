@@ -29,11 +29,11 @@ def get_delivery_statuses(snapshot_date: date, connection=Depends(get_connection
             normalized = "wechat" if channel.startswith("wechat") else channel
             latest.setdefault(normalized, (status, attempts, updated_at))
         cursor.execute(
-            """SELECT 'telegram', status, text_attempts + photo_attempts, updated_at
+            """SELECT 'telegram', d.status, d.text_attempts + d.photo_attempts, d.updated_at
                FROM ops.report_deliveries AS d
                JOIN core.job_snapshots AS s ON s.id = d.snapshot_id
                WHERE s.snapshot_date = %s
-               ORDER BY updated_at DESC""",
+               ORDER BY d.updated_at DESC""",
             (snapshot_date,),
         )
         telegram_status = {
