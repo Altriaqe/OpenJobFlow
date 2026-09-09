@@ -112,6 +112,8 @@ services:
   dashboard:
     <<: *jobflow-app
     environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
       JOBFLOW_API_BASE: http://api:8000
     command: ["streamlit", "run", "src/jobflow/dashboard/app.py", "--server.address", "0.0.0.0", "--server.port", "8501", "--server.headless", "true"]
     ports:
