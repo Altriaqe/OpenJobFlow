@@ -380,7 +380,7 @@ curl --fail http://127.0.0.1:8000/ready
 ```bash
 curl --fail \
   -H "Authorization: Bearer <REPORT_TRIGGER_TOKEN>" \
-  "http://127.0.0.1:8000/dashboard/workbench?report_date=<YYYY-MM-DD>"
+  "http://127.0.0.1:8000/dashboard/workbench?snapshot_date=<YYYY-MM-DD>"
 ```
 
 人工验收只检查已有快照的历史日期：Telegram 和微信公众号状态应独立显示；已投放渠道不能普通重试；明确失败可以再次投放；结果不确定必须先确认外部未收到；未来日期显示“未到时间，无法抓取或投放”。部署和只读检查阶段不得调用 `/reports/daily/multi/send` 或 `/reports/daily/multi/wechat/draft/create`。
