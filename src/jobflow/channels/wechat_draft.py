@@ -116,7 +116,9 @@ def create_draft(
     except (requests.RequestException, ValueError, TypeError) as exc:
         raise WechatDeliveryError("WeChat draft request failed") from exc
     if not isinstance(result, dict) or result.get("errcode", 0) != 0:
-        raise WechatDeliveryError("WeChat draft creation rejected")
+        error_code = result.get("errcode") if isinstance(result, dict) else None
+        safe_code = f"wechat_errcode_{error_code}" if isinstance(error_code, int) else None
+        raise WechatDeliveryError("WeChat draft creation rejected", error_code=safe_code)
     media_id = result.get("media_id")
     if not isinstance(media_id, str) or not media_id:
         raise WechatDeliveryError("WeChat draft response is invalid")

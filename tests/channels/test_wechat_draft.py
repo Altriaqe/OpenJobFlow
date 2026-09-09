@@ -94,5 +94,7 @@ def test_create_draft_returns_media_id_without_publishing():
 def test_create_draft_maps_wechat_error_without_secret():
     post = Mock(return_value=response({"errcode": 48001, "errmsg": "no permission"}))
 
-    with pytest.raises(WechatDeliveryError, match="rejected"):
+    with pytest.raises(WechatDeliveryError, match="rejected") as error:
         create_draft(access_token="secret-token", payload={"articles": []}, post=post)
+
+    assert error.value.error_code == "wechat_errcode_48001"

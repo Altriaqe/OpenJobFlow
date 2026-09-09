@@ -13,6 +13,7 @@ from jobflow.channels.wechat_draft import (
     get_wechat_access_token,
     upload_image,
 )
+from jobflow.channels.wechat_official import WechatDeliveryError
 from jobflow.db.wechat_drafts import (
     claim_wechat_draft,
     get_wechat_draft_status,
@@ -114,7 +115,11 @@ def create_wechat_draft_from_article(
         return DraftResult(report_date, "created", True)
     except Exception as exc:
         error_code = (
-            "article_package_invalid" if isinstance(exc, ValueError) else "wechat_draft_failed"
+            "article_package_invalid"
+            if isinstance(exc, ValueError)
+            else exc.error_code
+            if isinstance(exc, WechatDeliveryError) and exc.error_code
+            else "wechat_draft_failed"
         )
         record_wechat_draft_failed(
             connection,
