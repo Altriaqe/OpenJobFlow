@@ -111,8 +111,15 @@ def create_draft(
             headers={"Content-Type": "application/json; charset=utf-8"},
             timeout=30,
         )
-        response.raise_for_status()
         result = response.json()
+        if response.status_code >= 400:
+            error_code = result.get("errcode") if isinstance(result, dict) else None
+            safe_code = (
+                f"wechat_errcode_{error_code}"
+                if isinstance(error_code, int)
+                else f"wechat_http_{response.status_code}"
+            )
+            raise WechatDeliveryError("WeChat draft request rejected", error_code=safe_code)
     except (requests.RequestException, ValueError, TypeError) as exc:
         raise WechatDeliveryError("WeChat draft request failed") from exc
     if not isinstance(result, dict) or result.get("errcode", 0) != 0:

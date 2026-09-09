@@ -98,3 +98,12 @@ def test_create_draft_maps_wechat_error_without_secret():
         create_draft(access_token="secret-token", payload={"articles": []}, post=post)
 
     assert error.value.error_code == "wechat_errcode_48001"
+
+
+def test_create_draft_reads_error_body_before_http_status():
+    post = Mock(return_value=response({"errcode": 40001}, status_code=400))
+
+    with pytest.raises(WechatDeliveryError) as error:
+        create_draft(access_token="secret-token", payload={"articles": []}, post=post)
+
+    assert error.value.error_code == "wechat_errcode_40001"
