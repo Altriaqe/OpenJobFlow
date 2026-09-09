@@ -111,6 +111,8 @@ services:
 
   dashboard:
     <<: *jobflow-app
+    environment:
+      JOBFLOW_API_BASE: http://api:8000
     command: ["streamlit", "run", "src/jobflow/dashboard/app.py", "--server.address", "0.0.0.0", "--server.port", "8501", "--server.headless", "true"]
     ports:
       - "127.0.0.1:${DASHBOARD_PORT:-8501}:8501"

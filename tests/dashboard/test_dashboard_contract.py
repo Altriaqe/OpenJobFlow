@@ -41,3 +41,8 @@ def test_dashboard_uses_date_workbench_and_uncertain_confirmation():
     assert "confirm_uncertain" in APP
     assert "未到时间，无法抓取或投放" in APP
     assert "再次投放" in APP
+
+
+def test_dashboard_api_base_is_configurable_for_container_network():
+    assert "JOBFLOW_API_BASE" in APP
+    assert "http://api:8000" in Path("compose.yaml").read_text(encoding="utf-8")

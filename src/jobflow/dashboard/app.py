@@ -140,8 +140,9 @@ def _load_workbench(report_date: date):
         st.error("未配置 REPORT_TRIGGER_TOKEN")
         return None
     query = urlencode({"snapshot_date": report_date.isoformat()})
+    api_base = os.environ.get("JOBFLOW_API_BASE", "http://127.0.0.1:8000").rstrip("/")
     request = Request(
-        f"http://127.0.0.1:8000/dashboard/workbench?{query}",
+        f"{api_base}/dashboard/workbench?{query}",
         headers={"Authorization": f"Bearer {token}"},
     )
     try:
@@ -165,7 +166,7 @@ def _call_report_action(
         }
     )
     request = Request(
-        f"http://127.0.0.1:8000{path}?{query}",
+        f"{os.environ.get('JOBFLOW_API_BASE', 'http://127.0.0.1:8000').rstrip('/')}{path}?{query}",
         method="POST",
         headers={"Authorization": f"Bearer {token}"},
     )
