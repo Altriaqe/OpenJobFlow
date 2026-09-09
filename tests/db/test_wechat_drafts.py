@@ -23,6 +23,16 @@ def test_claim_returns_true_only_when_inserted():
     assert claim_wechat_draft(connection, report_date=date(2026, 8, 29)) is False
 
 
+def test_claim_reopens_only_failed_row():
+    cursor = Mock()
+    cursor.fetchone.side_effect = [None, (1,)]
+    connection = Mock()
+    connection.cursor.return_value = cursor
+
+    assert claim_wechat_draft(connection, report_date=date(2026, 8, 29)) is True
+    assert "status = 'failed'" in cursor.execute.call_args.args[0]
+
+
 def test_record_created_updates_only_uploading_row():
     connection = Mock()
     cursor = Mock()

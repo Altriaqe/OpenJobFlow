@@ -27,6 +27,18 @@ def claim_wechat_draft(connection, *, report_date: date) -> bool:
         """,
         (report_date,),
     )
+    if cursor.fetchone() is not None:
+        return True
+    cursor.execute(
+        """
+        UPDATE ops.wechat_draft_jobs
+        SET status = 'uploading', error_code = NULL, error_message = NULL,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE report_date = %s AND status = 'failed'
+        RETURNING id
+        """,
+        (report_date,),
+    )
     return cursor.fetchone() is not None
 
 

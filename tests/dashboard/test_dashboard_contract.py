@@ -34,3 +34,10 @@ def test_dashboard_telegram_probe_supports_existing_delivery_states():
     assert "ops.report_deliveries" in APP
     assert "completed_text_uncertain" in APP
     assert "ops.report_channel_deliveries" in APP
+
+
+def test_dashboard_uses_date_workbench_and_uncertain_confirmation():
+    assert "dashboard/workbench" in APP
+    assert "confirm_uncertain" in APP
+    assert "未到时间，无法抓取或投放" in APP
+    assert "再次投放" in APP

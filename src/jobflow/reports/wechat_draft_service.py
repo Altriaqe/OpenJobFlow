@@ -71,7 +71,7 @@ def create_wechat_draft_from_article(
 ) -> DraftResult:
     """创建单日草稿；失败记录后停止，不自动重试。"""
     current = get_wechat_draft_status(connection, report_date=report_date)
-    if current is not None:
+    if current is not None and current.status != "failed":
         return DraftResult(
             report_date,
             current.status,

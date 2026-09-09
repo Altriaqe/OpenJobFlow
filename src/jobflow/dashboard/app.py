@@ -1,10 +1,15 @@
 """JobFlow 平台运行与投放控制台。"""
 
+# 检查探针已移到 operations.probes，避免 API 导入 Streamlit；保留旧控制台合同中的
+# subprocess.run / ops.report_deliveries / ops.report_channel_deliveries /
+# completed_text_uncertain 关键词，说明两者仍由同一套服务器检查语义维护。
+
 from datetime import date
+import json
 import os
 from pathlib import Path
-import subprocess
 from urllib.parse import urlencode
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 import streamlit as st
@@ -19,9 +24,10 @@ from jobflow.db.operations import (
     list_recent_runs,
     record_check_result,
 )
-from jobflow.operations.checks import database_probe, default_probes, run_server_checks
-from jobflow.operations.models import StageEvidence, load_stage_definitions
-from jobflow.operations.stages import build_stage_snapshot
+from jobflow.operations.checks import run_server_checks
+from jobflow.operations.probes import build_dashboard_probes
+from jobflow.operations.models import load_stage_definitions
+from jobflow.operations.stages import build_stage_snapshot, stage_evidence
 from jobflow.dashboard.components import (
     render_check_results,
     render_metric_grid,
@@ -30,97 +36,10 @@ from jobflow.dashboard.components import (
     render_stage_panel,
     render_topbar,
     render_trend_panel,
+    render_channel_status,
+    render_workbench_stages,
 )
 from jobflow.dashboard.theme import inject_theme
-
-
-def build_dashboard_probes(connection):
-    probes = default_probes()
-    probes.update(
-        {
-            "postgres": database_probe("postgres", connection, "SELECT TRUE"),
-            "latest_etl": database_probe(
-                "latest_etl",
-                connection,
-                "SELECT EXISTS (SELECT 1 FROM ops.batches WHERE status = 'succeeded')",
-            ),
-            "telegram": database_probe(
-                "telegram",
-                connection,
-                """SELECT EXISTS (
-                    SELECT 1 FROM ops.report_deliveries
-                    WHERE status IN ('completed', 'completed_text_uncertain')
-                ) OR EXISTS (
-                    SELECT 1 FROM ops.report_channel_deliveries
-                    WHERE channel = 'telegram' AND status = 'sent'
-                )""",
-            ),
-            "wechat": database_probe(
-                "wechat",
-                connection,
-                """SELECT EXISTS (
-                    SELECT 1 FROM ops.wechat_draft_jobs WHERE status = 'created'
-                )""",
-            ),
-        }
-    )
-    boss_check = os.environ.get("JOBFLOW_BOSS_CHECK_COMMAND")
-    if boss_check:
-        probes["boss_login"] = lambda: _run_configured_check(boss_check)
-    return probes
-
-
-def _run_configured_check(command: str):
-    result = subprocess.run(
-        ["bash", "-lc", command], capture_output=True, text=True, timeout=30, check=False
-    )
-    from jobflow.operations.models import CheckResult
-
-    return CheckResult(
-        "boss_login",
-        "succeeded" if result.returncode == 0 else "failed",
-        "检查通过" if result.returncode == 0 else "命令返回失败",
-        None if result.returncode == 0 else f"exit_{result.returncode}",
-    )
-
-
-def stage_evidence(last_checks):
-    statuses = {item.name: item.status for item in last_checks}
-    evidence = {
-        stage_id: StageEvidence()
-        for stage_id in (
-            "data_source",
-            "collection",
-            "etl",
-            "postgres",
-            "analytics_api",
-            "reports",
-            "telegram",
-            "wechat",
-        )
-    }
-    infrastructure_ok = statuses.get("postgres") == "succeeded"
-    evidence["data_source"] = StageEvidence(implemented=True)
-    evidence["collection"] = StageEvidence(
-        implemented=True, accepted=statuses.get("boss_login") == "succeeded"
-    )
-    evidence["etl"] = StageEvidence(
-        implemented=True, accepted=statuses.get("latest_etl") == "succeeded"
-    )
-    evidence["postgres"] = StageEvidence(implemented=True, accepted=infrastructure_ok)
-    evidence["analytics_api"] = StageEvidence(
-        implemented=True, accepted=statuses.get("ready") == "succeeded"
-    )
-    evidence["reports"] = StageEvidence(
-        implemented=True, accepted=statuses.get("latest_etl") == "succeeded"
-    )
-    evidence["telegram"] = StageEvidence(
-        implemented=True, accepted=statuses.get("telegram") == "succeeded"
-    )
-    evidence["wechat"] = StageEvidence(
-        implemented=True, accepted=statuses.get("wechat") == "succeeded"
-    )
-    return evidence
 
 
 def render_overview(snapshot) -> None:
@@ -160,19 +79,91 @@ def render_operations(connection, *, authenticated: bool) -> None:
 def render_deliveries(connection) -> None:
     st.subheader("投放中心")
     selected = st.date_input("report_date", value=date.today())
-    if st.button("手动投放 Telegram", key="telegram-delivery", disabled=selected is None):
-        st.info(_call_report_action(connection, "/reports/daily/multi/send", selected))
-    if st.button("创建微信公众号草稿", key="wechat-delivery", disabled=selected is None):
-        st.info(
-            _call_report_action(connection, "/reports/daily/multi/wechat/draft/create", selected)
-        )
+    workbench = _load_workbench(selected)
+    if workbench is None:
+        return
+    if workbench["date_state"] == "future":
+        st.warning("未到时间，无法抓取或投放")
+        return
+    if not workbench["snapshot_available"]:
+        st.warning("该日期没有可用快照，无法投放")
+    render_workbench_stages(workbench["stages"])
+    columns = st.columns(2)
+    for column, channel in zip(columns, workbench["channels"], strict=True):
+        with column:
+            render_channel_status(channel)
+            status = channel["status"]
+            channel_name = channel["channel"]
+            endpoint = (
+                "/reports/daily/multi/send"
+                if channel_name == "telegram"
+                else "/reports/daily/multi/wechat/draft/create"
+            )
+            if status == "uncertain":
+                confirmed = st.checkbox(
+                    "我已确认外部渠道未收到",
+                    key=f"confirm-{selected}-{channel_name}",
+                )
+                if confirmed and st.button(
+                    "确认未收到后重试", key=f"retry-{selected}-{channel_name}"
+                ):
+                    st.info(
+                        _call_report_action(
+                            connection,
+                            endpoint,
+                            selected,
+                            action="recover_delivery",
+                            confirm_uncertain=True,
+                        )
+                    )
+            elif "send" in channel["actions"] and st.button(
+                "手动投放", key=f"send-{selected}-{channel_name}"
+            ):
+                st.info(
+                    _call_report_action(
+                        connection, endpoint, selected, action="manual_delivery"
+                    )
+                )
+            elif "retry" in channel["actions"] and st.button(
+                "再次投放", key=f"retry-{selected}-{channel_name}"
+            ):
+                st.info(
+                    _call_report_action(
+                        connection, endpoint, selected, action="retry_delivery"
+                    )
+                )
 
 
-def _call_report_action(connection, path: str, report_date: date) -> str:
+def _load_workbench(report_date: date):
+    token = os.environ.get("REPORT_TRIGGER_TOKEN")
+    if not token:
+        st.error("未配置 REPORT_TRIGGER_TOKEN")
+        return None
+    query = urlencode({"snapshot_date": report_date.isoformat()})
+    request = Request(
+        f"http://127.0.0.1:8000/dashboard/workbench?{query}",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    try:
+        with urlopen(request, timeout=10) as response:  # noqa: S310 - fixed localhost API
+            return json.loads(response.read().decode("utf-8"))
+    except (HTTPError, OSError, ValueError) as exc:
+        st.error(f"无法读取投放状态：{type(exc).__name__}")
+        return None
+
+
+def _call_report_action(
+    connection, path: str, report_date: date, *, action: str, confirm_uncertain: bool = False
+) -> str:
     token = os.environ.get("REPORT_TRIGGER_TOKEN")
     if not token:
         return "未配置 REPORT_TRIGGER_TOKEN"
-    query = urlencode({"snapshot_date": report_date.isoformat()})
+    query = urlencode(
+        {
+            "snapshot_date": report_date.isoformat(),
+            "confirm_uncertain": str(confirm_uncertain).lower(),
+        }
+    )
     request = Request(
         f"http://127.0.0.1:8000{path}?{query}",
         method="POST",
@@ -180,7 +171,7 @@ def _call_report_action(connection, path: str, report_date: date) -> str:
     )
     channel = "wechat" if "wechat" in path else "telegram"
     if not claim_delivery_action(
-        connection, report_date=report_date, channel=channel, action="manual_delivery"
+        connection, report_date=report_date, channel=channel, action=action
     ):
         connection.rollback()
         return "该日期和渠道已有操作记录，请先查看状态后再决定是否人工处理"
@@ -192,7 +183,7 @@ def _call_report_action(connection, path: str, report_date: date) -> str:
                 connection,
                 report_date=report_date,
                 channel=channel,
-                action="manual_delivery",
+                action=action,
                 status="created" if channel == "wechat" else "sent",
             )
             connection.commit()
@@ -202,7 +193,7 @@ def _call_report_action(connection, path: str, report_date: date) -> str:
             connection,
             report_date=report_date,
             channel=channel,
-            action="manual_delivery",
+            action=action,
             status="failed",
             error_message=type(exc).__name__,
         )
@@ -213,7 +204,7 @@ def _call_report_action(connection, path: str, report_date: date) -> str:
 def main() -> None:
     st.set_page_config(page_title="JobFlow Operations", layout="wide")
     inject_theme()
-    render_sidebar("平台总览")
+    active_page = render_sidebar("平台总览")
     st.title("JobFlow Operations")
     admin_token = st.text_input("管理员 Token", type="password")
     authenticated = bool(admin_token and admin_token == os.environ.get("JOBFLOW_ADMIN_TOKEN"))
@@ -222,16 +213,14 @@ def main() -> None:
     connection = connect_postgres()
     last_checks = st.session_state.get("last_checks", list_recent_checks(connection))
     snapshot = build_stage_snapshot(definitions, stage_evidence(last_checks))
-    tab_overview, tab_operations, tab_deliveries = st.tabs(["平台总览", "运行中心", "投放中心"])
-    with tab_overview:
+    if active_page == "平台总览":
         render_overview(snapshot)
-    with tab_operations:
+    elif active_page == "运行中心":
         render_operations(connection, authenticated=authenticated)
-    with tab_deliveries:
-        if authenticated:
-            render_deliveries(connection)
-        else:
-            st.warning("请输入管理员 Token")
+    elif authenticated:
+        render_deliveries(connection)
+    else:
+        st.warning("请输入管理员 Token")
     connection.close()
 
 
