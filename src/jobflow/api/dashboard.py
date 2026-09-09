@@ -10,8 +10,20 @@ from jobflow.api.dependencies import get_connection
 from jobflow.db.operations import list_recent_checks, list_recent_runs
 from jobflow.operations.models import load_stage_definitions
 from jobflow.operations.stages import build_stage_snapshot, stage_evidence
+from jobflow.operations.delivery_workbench import build_delivery_workbench
 
 router = APIRouter(prefix="/dashboard")
+
+
+@router.get("/workbench")
+def get_delivery_workbench(snapshot_date: date, connection=Depends(get_connection)):
+    """返回指定日期的安全投放工作台快照。"""
+    try:
+        return build_delivery_workbench(
+            connection, report_date=snapshot_date, today=date.today()
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="delivery workbench unavailable") from exc
 
 
 @router.get("/deliveries")

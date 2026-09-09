@@ -10,6 +10,7 @@ from jobflow.api.reports import (
     get_wechat_article_status_reader,
     get_wechat_daily_report_sender,
     get_wechat_daily_status_reader,
+    get_delivery_guard,
 )
 
 
@@ -17,6 +18,7 @@ def wechat_client(monkeypatch, *, sender=None, reader=None, connection=None):
     monkeypatch.setenv("REPORT_TRIGGER_TOKEN", "test-trigger-token")
     app = create_app()
     app.dependency_overrides[get_connection] = lambda: connection or Mock()
+    app.dependency_overrides[get_delivery_guard] = lambda: lambda *args, **kwargs: None
     if sender is not None:
         app.dependency_overrides[get_wechat_daily_report_sender] = lambda: sender
     if reader is not None:

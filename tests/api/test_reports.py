@@ -12,6 +12,7 @@ from jobflow.api.reports import (
     get_multi_daily_photo_recoverer,
     get_multi_daily_status_reader,
     get_report_sender,
+    get_delivery_guard,
 )
 
 
@@ -183,6 +184,7 @@ def multi_daily_client(monkeypatch, sender, *, status_reader=None, connection_pr
     app = create_app()
     app.dependency_overrides[get_connection] = connection_provider or (lambda: Mock())
     app.dependency_overrides[get_multi_daily_report_sender] = lambda: sender
+    app.dependency_overrides[get_delivery_guard] = lambda: lambda *args, **kwargs: None
     if status_reader is not None:
         app.dependency_overrides[get_multi_daily_status_reader] = lambda: status_reader
     return TestClient(app), app
@@ -392,6 +394,24 @@ def test_multi_daily_send_maps_manual_state_to_409(monkeypatch) -> None:
     assert response.status_code == 409
     assert response.json() == {"detail": "report delivery requires manual action"}
     assert "secret state" not in str(response.json())
+
+
+def test_multi_daily_send_guard_rejects_without_calling_sender(monkeypatch) -> None:
+    sender = Mock()
+    client, app = multi_daily_client(monkeypatch, sender)
+    app.dependency_overrides[get_delivery_guard] = lambda: (
+        lambda *args, **kwargs: (_ for _ in ()).throw(ValueError("future date"))
+    )
+    try:
+        response = client.post(
+            "/reports/daily/multi/send?snapshot_date=2026-08-20",
+            headers={"Authorization": "Bearer test-trigger-token"},
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 409
+    sender.assert_not_called()
 
 
 def test_multi_photo_recovery_rejects_missing_token_before_db_access(monkeypatch) -> None:

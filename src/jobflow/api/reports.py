@@ -45,11 +45,7 @@ from jobflow.reports.wechat_service import (
 )
 from jobflow.reports.wechat_draft_service import create_wechat_draft_from_article
 from jobflow.db.wechat_drafts import get_wechat_draft_status
-from jobflow.operations.manual_capture import (
-    TodayCaptureFailed,
-    TodayCaptureNotConfigured,
-    capture_today,
-)
+from jobflow.operations.delivery_workbench import assert_delivery_allowed
 
 router = APIRouter(prefix="/reports")
 bearer = HTTPBearer(auto_error=False)
@@ -103,6 +99,10 @@ def get_wechat_draft_creator():
 
 def get_wechat_draft_status_reader():
     return get_wechat_draft_status
+
+
+def get_delivery_guard():
+    return assert_delivery_allowed
 
 
 def require_report_token(
@@ -189,27 +189,27 @@ def multi_daily_report_status(
 @router.post("/daily/multi/send", dependencies=[Depends(require_report_token)])
 def send_multi_daily_snapshot_report(
     snapshot_date: date,
+    confirm_uncertain: bool = False,
     connection=Depends(get_connection),
     report_sender=Depends(get_multi_daily_report_sender),
+    delivery_guard=Depends(get_delivery_guard),
 ):
     """触发多关键词图文日报，保留投递结果不确定的人工恢复语义。"""
     if snapshot_date > date.today():
         raise HTTPException(status_code=422, detail="无法抓取未来日期")
     try:
+        delivery_guard(
+            connection,
+            report_date=snapshot_date,
+            channel="telegram",
+            today=date.today(),
+            confirm_uncertain=confirm_uncertain,
+        )
         return report_sender(connection, snapshot_date=snapshot_date)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail="report delivery is not actionable") from exc
     except MultiKeywordSnapshotMissing as exc:
-        if snapshot_date != date.today():
-            raise HTTPException(status_code=409, detail="历史日期没有已抓取快照") from exc
-        try:
-            capture_today(snapshot_date)
-        except TodayCaptureNotConfigured as capture_exc:
-            raise HTTPException(status_code=503, detail="当天未抓取，服务器未配置抓取命令") from capture_exc
-        except TodayCaptureFailed as capture_exc:
-            raise HTTPException(status_code=502, detail="当天抓取失败，未执行投放") from capture_exc
-        try:
-            return report_sender(connection, snapshot_date=snapshot_date)
-        except MultiKeywordSnapshotMissing as retry_exc:
-            raise HTTPException(status_code=502, detail="当天抓取完成但快照仍不完整，未执行投放") from retry_exc
+        raise HTTPException(status_code=409, detail="历史日期没有已抓取快照") from exc
     except MultiKeywordDeliveryStateError as exc:
         raise HTTPException(
             status_code=409,
@@ -360,12 +360,21 @@ def wechat_daily_article_status(
 )
 def create_wechat_daily_draft(
     snapshot_date: date,
+    confirm_uncertain: bool = False,
     connection=Depends(get_connection),
     creator=Depends(get_wechat_draft_creator),
+    delivery_guard=Depends(get_delivery_guard),
 ):
     """从当天文章包创建公众号草稿；失败以安全状态返回，不触发正式发布。"""
     article_dir = Path("runtime") / "reports" / snapshot_date.isoformat() / "wechat"
     try:
+        delivery_guard(
+            connection,
+            report_date=snapshot_date,
+            channel="wechat",
+            today=date.today(),
+            confirm_uncertain=confirm_uncertain,
+        )
         result = creator(
             connection,
             report_date=snapshot_date,
@@ -379,7 +388,7 @@ def create_wechat_daily_draft(
             "error_code": result.error_code,
         }
     except ValueError as exc:
-        raise HTTPException(status_code=409, detail="wechat draft request is invalid") from exc
+        raise HTTPException(status_code=409, detail="wechat draft request is not actionable") from exc
     except Exception as exc:
         raise HTTPException(status_code=503, detail="wechat draft service unavailable") from exc
 
