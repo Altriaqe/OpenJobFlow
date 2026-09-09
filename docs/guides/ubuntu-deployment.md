@@ -363,6 +363,28 @@ ssh -N -L <LOCAL_DASHBOARD_PORT>:127.0.0.1:<DASHBOARD_PORT> <SSH_USER>@<TAILSCAL
 
 进入控制台后，先输入管理员 Token，再执行服务器重启检查。只有检查全部通过时才能启动手动恢复运行；Telegram 和微信公众号操作必须分别选择明确的 `report_date`。微信公众号只创建待审核草稿，正式发表仍由人工完成。
 
+### 按日期渠道投放工作台验收
+
+更新 API 后只重建 API 容器，不触发 Telegram 或微信公众号写接口：
+
+```bash
+cd <JOBFLOW_DIR>
+git pull --ff-only origin main
+docker compose -f compose.yaml -f compose.proxy.yaml build api
+docker compose -f compose.yaml -f compose.proxy.yaml up -d --no-deps --force-recreate api
+curl --fail http://127.0.0.1:8000/ready
+```
+
+工作台使用历史日期或当天日期查询投放状态。验证页面前，可用只读请求确认指定日期的状态快照；请求需要报告鉴权 Token，但不要把 Token 写入命令历史或截图：
+
+```bash
+curl --fail \
+  -H "Authorization: Bearer <REPORT_TRIGGER_TOKEN>" \
+  "http://127.0.0.1:8000/dashboard/workbench?report_date=<YYYY-MM-DD>"
+```
+
+人工验收只检查已有快照的历史日期：Telegram 和微信公众号状态应独立显示；已投放渠道不能普通重试；明确失败可以再次投放；结果不确定必须先确认外部未收到；未来日期显示“未到时间，无法抓取或投放”。部署和只读检查阶段不得调用 `/reports/daily/multi/send` 或 `/reports/daily/multi/wechat/draft/create`。
+
 ## 笔记本服务器合盖运行（可选）
 
 如果 Ubuntu 本身安装在笔记本上，默认合盖可能触发休眠，Docker、Chrome、timer 和网络都会暂停。先检查是否已有覆盖：
