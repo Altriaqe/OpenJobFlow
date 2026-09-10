@@ -115,6 +115,11 @@ services:
       POSTGRES_HOST: postgres
       POSTGRES_PORT: "5432"
       JOBFLOW_API_BASE: http://api:8000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      api:
+        condition: service_healthy
     command: ["streamlit", "run", "src/jobflow/dashboard/app.py", "--server.address", "0.0.0.0", "--server.port", "8501", "--server.headless", "true"]
     ports:
       - "127.0.0.1:${DASHBOARD_PORT:-8501}:8501"
