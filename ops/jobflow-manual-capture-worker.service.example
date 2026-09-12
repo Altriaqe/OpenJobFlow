@@ -5,9 +5,9 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=altria
-WorkingDirectory=/home/altria/services/jobflow
-ExecStart=/home/altria/services/jobflow/ops/manual_capture_worker.sh
+User=<JOBFLOW_USER>
+WorkingDirectory=<JOBFLOW_DIR>
+ExecStart=<JOBFLOW_DIR>/ops/manual_capture_worker.sh
 Restart=always
 RestartSec=5
 

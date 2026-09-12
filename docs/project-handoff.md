@@ -1,10 +1,12 @@
 # JobFlow 项目当前状态与开发交接
 
-更新日期：2026-09-05
+更新日期：2026-09-10
 
 这份文档是上下文压缩、新对话、换电脑或暂停开发后的第一入口。继续开发前先读取本文件，再用代码、测试、Git 和服务器实际输出确认可能变化的状态。
 
-## 0. 2026-09-05 当前停点（V1.3.5）
+## 0. 2026-09-05 历史验收基线（V1.3.5）
+
+以下内容是 2026-09-05 以前的历史验收基线；当前状态以本文件后面的 2026-09-10 停点为准。
 
 V1.3.5 已把“服务器生成文章包、Windows 下载、人工导入”升级为“服务器生成文章包、自动创建正式公众号草稿、人工审核发布”。Telegram 仍按原链路自动发送，Windows 下载工具保留为故障兜底，V1.3.2 测试号接口保留供手动回归。
 
@@ -67,11 +69,70 @@ docs/development/plans/2026-08-26-wechat-official-daily-delivery.md
 
 下一步是继续观察正式 timer 的连续运行，并在每周结束时验收本周与上周对比。公众号最终审核与发布保持人工确认。自动备份恢复、登录失效通知和公网 HTTPS 仍未完成。
 
-## 2026-09-06 平台运行与投放控制台开发停点
+## 2026-09-07 React 运营控制台与只读 API 停点
 
-第一阶段 Streamlit 控制台已在本地完成代码实现，包含平台总览、运行中心和投放中心。阶段定义位于 `config/platform_stages.yaml`，运行检查、恢复运行和日期/渠道操作记录由 Migration 011 提供 PostgreSQL 表。控制台绑定回环地址，管理员 Token 只从服务器环境读取；Telegram 与微信公众号仍分别操作，微信公众号只创建草稿。
+React + Vite + TypeScript 前端已加入 `frontend/`，定位为独立的运营控制台。当前包含平台总览、运行中心、投放中心、分析指标和告警记录五个可点击页面，分析页会尝试读取 `GET /analytics/cities`，服务不可用时保留演示数据并标记未连接。投放按钮仍禁用，未接入真实投放动作。
 
-当前状态是“本地代码完成，Ubuntu 待迁移验收”，不能表述为服务器已部署。继续工作前需要在 Ubuntu 执行 Migration 011，安装包含 Streamlit 的镜像/环境，安装 `jobflow-dashboard.service`，通过 SSH 隧道打开页面，并完成一次服务器检查和一次用户选择日期的恢复验收。真实投放结果、数据库记录和 systemd 状态必须以服务器现场输出为准。
+FastAPI 增加本地前端 CORS 白名单，默认允许 `localhost:5173` 与 `127.0.0.1:5173`；数据库连接创建失败统一返回 `503`，不把配置细节暴露给客户端。项目使用本地 Python 3.12.13 环境验证，健康与分析 API 测试共 18 项通过，前端 `npm run build` 通过。
+
+本次公开代码提交为 `57e695a`，已推送到 `origin/main`。该提交不包含之前暂存的 Streamlit 文件；当前 Streamlit 修改仍需单独处理。React 依赖目录已加入 `.gitignore`，凭据和真实环境变量未进入仓库。
+
+当前状态是“React/API 代码已推送，数据库与 Ubuntu 服务器现场部署待验收”，不能表述为服务器已经运行新前端。下一步应先在服务器复查 Git、镜像和数据库，再决定采用静态前端服务或反向代理挂载；投放接口必须在只读状态稳定后单独设计确认流程。
+
+相关计划：
+
+```text
+docs/development/plans/2026-09-06-react-operations-console.md
+```
+
+## 2026-09-10 Streamlit 运营控制台服务器停点
+
+第一阶段 Streamlit 控制台现已通过 Docker Compose 在 Ubuntu 服务器启动，并通过本机 SSH 隧道访问。控制台包含平台总览、运行中心和投放中心；阶段定义位于 `config/platform_stages.yaml`，运行检查和日期/渠道投放记录使用 Migration 011 的 PostgreSQL 表。管理员 Token 只从服务器私有环境读取；Telegram 与微信公众号始终是独立动作，微信公众号只创建草稿，人工审核后发布。
+
+本地 `main` 与 `origin/main` 当前均为 `9aff50a`。本轮与控制台有关的已推送提交为：
+
+```text
+940af70 增加按日期渠道投放状态服务
+a18681e 增加按日期投放工作台接口
+51acf99 接入按日期渠道投放工作台
+6183334 补充投放工作台部署验收
+eaedb7e 修正 Dashboard 容器内 API 地址
+bb32f31 修正工作台查询参数名
+49ea0a8 修正 Dashboard 数据库容器地址
+9aff50a 确保 Dashboard 等待 API 就绪
+```
+
+已现场确认的部署事实：
+
+- Dashboard 容器绑定服务器回环地址的 `8502`，本地通过 SSH 隧道打开页面；
+- Dashboard 已成功连接 PostgreSQL；此前错误使用容器内 `127.0.0.1:5432`，现固定为 `postgres:5432`；
+- Dashboard 调用 API 使用 Compose 服务地址 `http://api:8000`，并等待 API 健康检查通过后启动；
+- 运行中心页面已可打开，最近一次页面显示的 `wechat`、`telegram`、`latest_etl`、`boss_login`、`ready` 等检查均为 `succeeded`；
+- 本地相关 Dashboard/operations 测试为 `24 passed`；此前工作台、API、微信相关测试为 `57 passed`，完整离线回归为 `385 passed, 1 skipped`。PostgreSQL 集成测试仍依赖本机私有数据库环境，未把环境缺失记为通过。
+
+2026-09-10 本轮只读复查已完成：服务器 `HEAD=9aff50a`，`api` 与 `postgres` 为 healthy，`dashboard` 正常运行并绑定 `127.0.0.1:8502`；Dashboard 容器输出 `postgres:5432 http://api:8000`，`/ready` 返回 `ready`。`GET /dashboard/workbench` 对 2026-09-09 和 2026-09-10 均返回快照、文章可用，Telegram 为 `sent`、微信为 `created`，两个渠道都没有可执行动作。本轮没有调用 Telegram 或微信写接口。
+
+服务器工作区不是干净状态，存在未提交的 `ops/manual_capture_worker.sh` 修改；在确认该服务器本地修改的来源和用途前，不要执行会覆盖它的 Git 操作。上述检查只证明本次只读状态，不替代后续 timer 连续运行和整机恢复验收。
+
+服务器继续操作只使用 Compose Dashboard 服务，不重启 API、PostgreSQL、daily timer 或 BOSS Chrome：
+
+```bash
+cd <JOBFLOW_DIR>
+git pull --ff-only
+DASHBOARD_PORT=8502 docker compose -f compose.yaml -f compose.proxy.yaml \
+  --profile dashboard up -d --no-build --force-recreate dashboard
+docker compose -f compose.yaml -f compose.proxy.yaml ps api dashboard postgres
+docker compose -f compose.yaml -f compose.proxy.yaml \
+  exec dashboard sh -lc 'echo "$POSTGRES_HOST:$POSTGRES_PORT $JOBFLOW_API_BASE"'
+```
+
+期望 Dashboard 容器输出仅包含：`postgres:5432 http://api:8000`。本地 Windows PowerShell 单独保持隧道：
+
+```powershell
+ssh -N -L 8502:127.0.0.1:8502 <SSH_USER>@<TAILSCALE_IP>
+```
+
+浏览器入口为 `http://127.0.0.1:8502`。`ssh -L` 必须在 Windows 本机运行，不能在 Ubuntu 服务器终端运行；端口已占用时先检查现有隧道，不随意结束进程。
 
 设计与实施计划：
 
@@ -83,13 +144,16 @@ docs/development/plans/2026-09-05-platform-operations-dashboard.md
 新对话恢复提示词：
 
 ```text
-继续 OpenJobFlow V1.3.5 微信公众号自动草稿维护。
+继续 OpenJobFlow 运营控制台和 V1.3.5 微信公众号自动草稿维护。
 项目路径：<LOCAL_JOBFLOW_DIR>
 请先阅读 docs/project-handoff.md、
 docs/guides/wechat-official-draft.md
 和 docs/reference/architecture.md，
 然后检查 git status --short --branch 与 git log -5 --oneline。
-正式公众号自动草稿已真实验收；继续前复查服务器 Git、镜像、Migration 010、API 状态和 timer。
+先读取本文件中“2026-09-10 Streamlit 运营控制台服务器停点”。
+本地和服务器 HEAD 已到 9aff50a；服务器 Dashboard、数据库/API 地址、API 就绪状态和 2026-09-09/10 工作台只读查询均已验收。
+服务器仍有未提交的 ops/manual_capture_worker.sh 修改；下一步先只读确认该差异的来源和用途，不要覆盖，不要调用 Telegram 或微信写接口。
+正式公众号自动草稿已真实验收，微信公众号保持自动创建草稿、人工审核发布；继续前复查 API 状态和 timer。
 真实 AppID、AppSecret、Token、素材 ID、服务器地址和真实文章包不得写入 Git。
 ```
 
@@ -378,6 +442,77 @@ scraper Ubuntu：master 基线 2bc40f5，生产脚本已应用未提交兼容补
 禁止提交：真实抓取 JSON、local-output/、Cookie、Profile、Token、订阅和 .env
 ```
 
+## 2026-09-08 React 正式操作链路与手动抓取桥接停点
+
+```text
+最新代码：4959843 修复 Telegram 状态查询字段歧义
+公开仓库：<LOCAL_JOBFLOW_DIR>
+服务器目录：<JOBFLOW_DIR>
+```
+
+React + Vite + TypeScript 运营控制台已经接入管理员会话、HttpOnly Cookie、二次确认和真实操作状态。服务器检查、Telegram 投放和微信公众号草稿入口均由 FastAPI 受保护接口承接，前端不保存报告 Token，也不直接调用外部渠道。前端构建、相关后端测试、Ruff 和 `git diff --check` 已通过；当前仍属于开发/上线演进，README 暂不更新。
+
+手动投放的服务端规则如下：过去日期有快照则直接复用，没有快照则拒绝；今天有快照则直接投放，没有快照则请求宿主机抓取并完成 ETL，成功后才继续投放；未来日期拒绝；已投放返回 `already_sent`，不重复调用 Telegram。前端日期控件只是体验层限制，不能替代服务端判断。
+
+API 容器与宿主机抓取器通过共享目录桥接：
+
+```text
+runtime/manual-capture/YYYY-MM-DD.request
+→ jobflow-manual-capture-worker.service
+→ JOBFLOW_CAPTURE_ONLY=true ops/daily_update.sh
+→ YYYY-MM-DD.result
+→ API 读取 succeeded 后继续投放
+```
+
+队列目录由 `JOBFLOW_CAPTURE_QUEUE` 配置，等待时长由 `JOBFLOW_CAPTURE_TIMEOUT` 配置。服务器 worker 已因 runtime 权限问题修复为 `altria` 可写并显示 active；这只证明 worker 进程正在运行，不等于“无快照到抓取、ETL、Telegram 投放”完整链路已验收。
+
+Telegram 曾出现“投放接口 200、状态查询 503”的分离故障：投放记录在 `ops.report_deliveries`，微信草稿记录在 `ops.report_channel_deliveries`，旧查询读错表且 SQL 字段有歧义。现已修复状态查询，但仍需分别核对接口响应、数据库状态和手机端实际收件。
+
+部署边界：本机已确认 `main` 与 `origin/main` 指向 `4959843`；服务器是否已拉取该提交需通过 SSH 现场确认。整机重启自动恢复、连续无人值守、公网高可用和今天无快照完整实跑仍未验收。公开文档不记录 Token、密码、Webhook、Cookie、Chat ID、真实服务器地址或私钥。
+
+## 2026-09-09 微信公众号草稿排障暂停交接
+
+本节是当前最高优先级停点。它是一次运行排障记录，不是版本更新；React 可视化和运营控制台仍处于开发/上线演进，README 暂不更新，也不新增版本号或每日记录。
+
+### 已确认的 2026-09-09 运行结果
+
+以下结果来自服务器任务日志、文章包和受控接口诊断，必须与更早的“微信公众号草稿已验收”历史记录区分：
+
+- BOSS 抓取成功；四关键词 ETL 成功；任务日志记录合并数据 180 条；
+- 微信文章包生成成功，包含 `article.html`、`article.md`、`cover.png`、`trend.png` 和 `manifest.json`；`manifest.json` 的 `new_job_count` 为 268。该字段与日志中的合并样本数属于不同记录口径，后续不要互相替换；
+- Telegram 本次状态为 `sent`，不要因为微信失败而重新投放 Telegram；
+- 微信草稿创建失败，systemd 最终失败边界在微信草稿阶段；ETL、文章包和 Telegram 不因该失败回滚；
+- 文章包真实路径为 `runtime/reports/2026-09-09/wechat/`。此前一次“图片缺失”判断漏写了 `wechat/` 子目录，属于诊断路径错误，不是微信拒绝。
+
+### 已完成的受控诊断
+
+- API 容器的 `runtime` 权限曾错误，出现 `PermissionError`；已按容器运行 UID/GID 修复目录属主和读写权限，之后文章包成功生成；
+- 正式账号环境变量存在；Token 请求返回 HTTP 200、无微信错误码且取得 Token；
+- 趋势图临时素材上传返回 HTTP 200；封面永久素材上传返回 HTTP 200，均未返回微信错误码；
+- 尚未取得本次 `draft/add` 的成功响应。用户在最终草稿受控验证前暂停，因此不能写成“草稿已创建”，也不能直接重试。
+
+### 版本和诊断边界
+
+服务器容器内当前实际暴露的 `jobflow.channels.wechat_draft` 函数包括 `get_wechat_access_token`、`upload_image`、`build_draft_payload` 和 `create_draft`，没有 `_load_package`。这说明服务器运行模块与此前诊断所依据的源码版本/函数名不完全一致。下一次修改前必须先确认服务器 Git ref、API 镜像和容器内实际源码，再与 `<LOCAL_JOBFLOW_DIR>` 对比，不能凭旧函数名盲改本地代码或推送。
+
+用户要求暂停后，本次没有继续创建草稿、重跑每日任务、重发 Telegram、重建/重启 API 或修改服务器源码；之前的 Token 和素材上传诊断已经产生了对应的微信接口请求，不能把本次过程描述为“完全只读”。
+
+### 新对话第一步
+
+新对话必须按以下顺序执行，每次只做一个可验收的小步骤：
+
+```text
+读取本节和 docs/guides/wechat-official-draft.md
+→ 只读确认服务器 Git、API 镜像、容器、/ready 和 2026-09-09 草稿状态
+→ 查看公众号后台是否已有同日草稿
+→ 对照服务器实际模块与 <LOCAL_JOBFLOW_DIR> 源码
+→ 明确根因后再决定最小代码修复
+```
+
+在确认数据库状态和公众号后台之前，禁止调用 `draft/add`、普通每日投放接口或完整 `daily_update.service`；禁止重复 Telegram。若发现同日草稿已存在，按幂等规则停止，不创建第二份。
+
+详细运维记录：[`operations/2026-09-09-wechat-draft-failure-handoff.md`](operations/2026-09-09-wechat-draft-failure-handoff.md)。
+
 ## 9. 下一步
 
 ### V1.3.5 自动创建正式公众号草稿
@@ -447,16 +582,16 @@ V1.2 已专用于可选服务器代理；V1.3 已完成的四城市三页范围�
 新建对话时可以发送：
 
 ```text
-这是 JobFlow 项目，请先完整阅读 <LOCAL_JOBFLOW_DIR>/docs/project-handoff.md，
-再读取 README.md、docs/guides/ubuntu-deployment.md、git status 和最近 5 个提交。
+这是 OpenJobFlow 项目，请先完整阅读 <LOCAL_JOBFLOW_DIR>/docs/project-handoff.md，
+再读取 docs/guides/wechat-official-draft.md、docs/reference/architecture.md、
+git status 和最近 8 个提交。
 个人知识库路径只在本机私有维护文档中记录，不进入公开仓库。
 请以代码、测试和 Git 为正式事实来源，不要把计划写成已完成。
 我是初学者，指导时说明目标、步骤、结果、为什么这样做和知识点；
 如果我的表达不符合业务术语，请转换为规范业务语句后理解。
-当前 V1.1 五分钟自动抓取、ETL 和 Telegram 已真实验收；
-V1.2 Compose 可选服务器代理也已在 Ubuntu 完成真实报告和重启复验；
-V1.3 四城市三页、每日对比简报、城市构成 PNG 和 Telegram 图文发送已完成一次真实验收；
-下一步观察正式 timer 的连续运行，再独立验收整机重启恢复。
+当前公开分支 main/origin/main 为 9aff50a；Streamlit Dashboard 已在 Ubuntu Compose 中可通过 SSH 隧道访问，数据库连接和运行中心检查已成功。
+“2026-09-10 Streamlit 运营控制台服务器停点”的只读验收已完成；下一步先确认服务器未提交的 ops/manual_capture_worker.sh 差异，不要覆盖，也不要调用 Telegram 或微信写接口。
+2026-09-09 微信草稿排障事件已由维护者确认成功发表并关闭；原始记录仅保留作安全排障证据。公众号保持自动创建草稿、人工审核发布，任何同日重试前必须先查数据库与公众号后台。
 一次只推进一个可以独立验收的小步骤，不自动 commit 或 push。
 ```
 
