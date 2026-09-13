@@ -385,6 +385,19 @@ curl --fail \
 
 人工验收只检查已有快照的历史日期：Telegram 和微信公众号状态应独立显示；已投放渠道不能普通重试；明确失败可以再次投放；结果不确定必须先确认外部未收到；未来日期显示“未到时间，无法抓取或投放”。部署和只读检查阶段不得调用 `/reports/daily/multi/send` 或 `/reports/daily/multi/wechat/draft/create`。
 
+### Telegram 文字和图片均未收到时的恢复
+
+当状态为 `text_uncertain`，且维护者确认 Telegram 中既没有文字也没有图片时，使用专用全量恢复接口；不要调用普通发送接口或仅补图接口：
+
+```bash
+curl --fail \
+  -X POST \
+  -H "Authorization: Bearer <REPORT_TRIGGER_TOKEN>" \
+  "http://127.0.0.1:8000/reports/daily/multi/recover?snapshot_date=<YYYY-MM-DD>&confirm_not_received=true"
+```
+
+该接口只允许完整的 `text_uncertain` 投递组，先发送文字，文字明确成功后才发送图片；文字再次出现超时或不确定时立即停止，不发送图片。接口只返回安全状态，不返回消息 ID。执行前仍需确认快照存在，并由维护者确认目标 Telegram 会话没有收到当天内容。
+
 ## 笔记本服务器合盖运行（可选）
 
 如果 Ubuntu 本身安装在笔记本上，默认合盖可能触发休眠，Docker、Chrome、timer 和网络都会暂停。先检查是否已有覆盖：

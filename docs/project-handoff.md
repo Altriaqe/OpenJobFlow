@@ -575,6 +575,7 @@ V1.2 已专用于可选服务器代理；V1.3 已完成的四城市三页范围�
 - Windows `download-wechat-article.cmd/.ps1` 已真实拉取 2026-08-28 六文件文章包，校验 `new_job_count=256`，兼容 Windows PowerShell 5 中文编码；它只下载和整理，不自动发布。
 - `downloads/` 和 `runtime/` 含真实岗位发布产物，只能留在本地或服务器，不得提交公共仓库。
 - 微信草稿失败不回滚 ETL 或 Telegram；`failed`、`uploading` 和网络超时都应先检查后台与状态，不得自动重复创建。
+- Telegram 文字和图片均未收到且状态为 `text_uncertain` 时，使用受保护的 `/reports/daily/multi/recover?confirm_not_received=true` 全量恢复接口；先发文字，文字再次不确定时停止，不调用普通发送或仅补图接口。
 - `api.weixin.qq.com` 的直连例外只作用于微信 API；Telegram 的 Mihomo 路径不得因排查微信而整体移除。
 
 ## 11. 新对话交接提示词

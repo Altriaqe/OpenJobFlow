@@ -9,6 +9,7 @@ from jobflow.api.reports import (
     get_daily_report_sender,
     get_daily_status_reader,
     get_multi_daily_report_sender,
+    get_multi_daily_recoverer,
     get_multi_daily_photo_recoverer,
     get_multi_daily_status_reader,
     get_report_sender,
@@ -196,6 +197,42 @@ def multi_recovery_client(monkeypatch, recoverer, *, connection_provider=None):
     app.dependency_overrides[get_connection] = connection_provider or (lambda: Mock())
     app.dependency_overrides[get_multi_daily_photo_recoverer] = lambda: recoverer
     return TestClient(app), app
+
+
+def multi_full_recovery_client(monkeypatch, recoverer, *, connection_provider=None):
+    monkeypatch.setenv("REPORT_TRIGGER_TOKEN", "test-trigger-token")
+    app = create_app()
+    app.dependency_overrides[get_connection] = connection_provider or (lambda: Mock())
+    app.dependency_overrides[get_multi_daily_recoverer] = lambda: recoverer
+    return TestClient(app), app
+
+
+def test_multi_full_recovery_requires_confirmation_and_forwards_it(monkeypatch):
+    recoverer = Mock(return_value={"status": "sent", "snapshot_ids": [1, 2, 3, 4]})
+    connection = Mock()
+    client, app = multi_full_recovery_client(
+        monkeypatch, recoverer, connection_provider=lambda: connection
+    )
+    try:
+        rejected = client.post(
+            "/reports/daily/multi/recover?snapshot_date=2026-09-13",
+            headers={"Authorization": "Bearer test-trigger-token"},
+        )
+        accepted = client.post(
+            "/reports/daily/multi/recover?snapshot_date=2026-09-13&confirm_not_received=true",
+            headers={"Authorization": "Bearer test-trigger-token"},
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert rejected.status_code == 409
+    assert accepted.status_code == 200
+    assert accepted.json() == {"status": "sent", "snapshot_ids": [1, 2, 3, 4]}
+    recoverer.assert_called_once_with(
+        connection,
+        snapshot_date=date(2026, 9, 13),
+        confirm_not_received=True,
+    )
 
 
 def test_daily_send_endpoint_forwards_date_and_keyword(monkeypatch) -> None:

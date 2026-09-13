@@ -34,6 +34,7 @@ from jobflow.reports.multi_keyword_service import (
     MultiKeywordScopeError,
     MultiKeywordSnapshotMissing,
     get_multi_keyword_report_status,
+    recover_multi_keyword_report,
     recover_multi_keyword_report_photo,
     send_multi_keyword_report,
 )
@@ -75,6 +76,10 @@ def get_multi_daily_status_reader():
 
 def get_multi_daily_photo_recoverer():
     return recover_multi_keyword_report_photo
+
+
+def get_multi_daily_recoverer():
+    return recover_multi_keyword_report
 
 
 def get_wechat_daily_report_sender():
@@ -350,6 +355,36 @@ def wechat_daily_article_status(
     """返回文章包生成状态，不读取数据库或暴露文件路径。"""
     try:
         return status_reader(snapshot_date=snapshot_date)
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="report service unavailable") from exc
+
+
+@router.post("/daily/multi/recover", dependencies=[Depends(require_report_token)])
+def recover_multi_daily_snapshot_report(
+    snapshot_date: date,
+    confirm_not_received: bool = False,
+    connection=Depends(get_connection),
+    recoverer=Depends(get_multi_daily_recoverer),
+):
+    """在确认文字和图片均未收到后，按顺序恢复 Telegram 图文投递。"""
+    if not confirm_not_received:
+        raise HTTPException(status_code=409, detail="missing receipt confirmation required")
+    try:
+        return recoverer(
+            connection,
+            snapshot_date=snapshot_date,
+            confirm_not_received=True,
+        )
+    except MultiKeywordSnapshotMissing as exc:
+        raise HTTPException(status_code=409, detail="daily snapshots incomplete") from exc
+    except MultiKeywordDeliveryStateError as exc:
+        raise HTTPException(
+            status_code=409, detail="report delivery requires manual action"
+        ) from exc
+    except (TelegramDeliveryError, TelegramDeliveryUncertain) as exc:
+        raise HTTPException(status_code=502, detail="report delivery failed") from exc
+    except TelegramConfigurationError as exc:
+        raise HTTPException(status_code=503, detail="report service unavailable") from exc
     except Exception as exc:
         raise HTTPException(status_code=503, detail="report service unavailable") from exc
 

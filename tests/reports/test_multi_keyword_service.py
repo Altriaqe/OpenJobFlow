@@ -698,3 +698,46 @@ def test_recovery_photo_timeout_stops_without_retry(monkeypatch) -> None:
     photo_sender.assert_called_once()
     assert multi_keyword_service.record_photo_uncertain.call_count == 4
     assert connection.commit.call_count == 2
+
+
+def test_full_recovery_sends_text_then_photo(monkeypatch) -> None:
+    connection = arrange(monkeypatch, delivery_status="text_uncertain", locked_statuses=("text_uncertain", "text_sent"))
+    text_sender = Mock(return_value=TelegramReceipt(201, 1))
+    photo_sender = Mock(return_value=TelegramReceipt(202, 1))
+
+    result = multi_keyword_service.recover_multi_keyword_report(
+        connection,
+        snapshot_date=REPORT_DATE,
+        confirm_not_received=True,
+        keywords=KEYWORDS,
+        text_sender=text_sender,
+        photo_sender=photo_sender,
+    )
+
+    assert result == {"status": "sent", "snapshot_ids": [11, 12, 13, 14]}
+    text_sender.assert_called_once_with("合并简报")
+    photo_sender.assert_called_once_with(b"heatmap")
+    assert multi_keyword_service.record_text_sending.call_count == 4
+    assert multi_keyword_service.record_text_sent.call_count == 4
+    assert multi_keyword_service.record_photo_sending.call_count == 4
+    assert multi_keyword_service.record_photo_sent.call_count == 4
+
+
+def test_full_recovery_stops_before_photo_when_text_is_uncertain(monkeypatch) -> None:
+    connection = arrange(monkeypatch, delivery_status="text_uncertain")
+    text_sender = Mock(side_effect=TelegramDeliveryUncertain("hidden", attempts=1))
+    photo_sender = Mock()
+
+    with pytest.raises(TelegramDeliveryUncertain):
+        multi_keyword_service.recover_multi_keyword_report(
+            connection,
+            snapshot_date=REPORT_DATE,
+            confirm_not_received=True,
+            keywords=KEYWORDS,
+            text_sender=text_sender,
+            photo_sender=photo_sender,
+        )
+
+    text_sender.assert_called_once_with("合并简报")
+    photo_sender.assert_not_called()
+    assert multi_keyword_service.record_text_uncertain.call_count == 4

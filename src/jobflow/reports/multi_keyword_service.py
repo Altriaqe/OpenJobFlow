@@ -630,3 +630,106 @@ def recover_multi_keyword_report_photo(
         "photo_message_id": photo_receipt.message_id,
         "text_receipt_known": text_receipt_known,
     }
+
+
+def recover_multi_keyword_report(
+    connection,
+    *,
+    snapshot_date: date,
+    confirm_not_received: bool,
+    keywords: Sequence[str] = DAILY_KEYWORDS,
+    text_sender: Callable[[str], TelegramReceipt] | None = None,
+    photo_sender: Callable[[bytes], TelegramReceipt] | None = None,
+) -> dict[str, object]:
+    """在确认文字和图片均未收到后，按顺序恢复整组 Telegram 投递。"""
+    if not confirm_not_received:
+        raise MultiKeywordDeliveryStateError("receipt confirmation required")
+
+    normalized = _validated_keywords(keywords)
+    headers, missing = _load_headers(
+        connection,
+        snapshot_date=snapshot_date,
+        keywords=normalized,
+    )
+    if missing:
+        raise MultiKeywordSnapshotMissing(missing)
+    _validate_shared_scope(headers)
+    snapshot_ids = [header.id for header in headers]
+    text, image = _build_report_parts(
+        connection,
+        snapshot_date=snapshot_date,
+        headers=headers,
+    )
+
+    deliveries = _lock_deliveries(connection, snapshot_ids)
+    status, text_message_id, photo_message_id = _group_delivery_state(deliveries)
+    if status != "text_uncertain" or text_message_id is not None or photo_message_id is not None:
+        connection.rollback()
+        raise MultiKeywordDeliveryStateError("full recovery requires uncertain text delivery")
+    for snapshot_id in snapshot_ids:
+        record_text_sending(connection, snapshot_id)
+    connection.commit()
+
+    selected_text_sender = text_sender or (lambda value: send_telegram_text(value, max_attempts=1))
+    try:
+        text_receipt = selected_text_sender(text)
+    except TelegramDeliveryUncertain as exc:
+        _record_group_result(
+            connection,
+            snapshot_ids=snapshot_ids,
+            recorder=record_text_uncertain,
+            error_type="telegram_delivery_uncertain",
+            attempts=exc.attempts,
+        )
+        raise TelegramDeliveryUncertain(
+            "recovery text delivery is uncertain", attempts=exc.attempts
+        ) from None
+    except TelegramDeliveryError as exc:
+        _record_group_result(
+            connection,
+            snapshot_ids=snapshot_ids,
+            recorder=record_text_failed,
+            error_type="telegram_delivery",
+            attempts=exc.attempts,
+        )
+        raise TelegramDeliveryError(
+            "recovery text delivery failed", attempts=exc.attempts
+        ) from None
+
+    for snapshot_id in snapshot_ids:
+        record_text_sent(connection, snapshot_id, text_receipt.message_id, text_receipt.attempts)
+    connection.commit()
+
+    _claim_photo(connection, snapshot_ids)
+    selected_photo_sender = photo_sender or (
+        lambda value: send_telegram_photo(value, max_attempts=1)
+    )
+    try:
+        photo_receipt = selected_photo_sender(image)
+    except TelegramDeliveryUncertain as exc:
+        _record_group_result(
+            connection,
+            snapshot_ids=snapshot_ids,
+            recorder=record_photo_uncertain,
+            error_type="telegram_delivery_uncertain",
+            attempts=exc.attempts,
+        )
+        raise TelegramDeliveryUncertain(
+            "recovery photo delivery is uncertain", attempts=exc.attempts
+        ) from None
+    except TelegramDeliveryError as exc:
+        _record_group_result(
+            connection,
+            snapshot_ids=snapshot_ids,
+            recorder=record_photo_failed,
+            error_type="telegram_delivery",
+            attempts=exc.attempts,
+        )
+        raise TelegramDeliveryError(
+            "recovery photo delivery failed", attempts=exc.attempts
+        ) from None
+
+    for snapshot_id in snapshot_ids:
+        record_photo_sent(connection, snapshot_id, photo_receipt.message_id, photo_receipt.attempts)
+    connection.commit()
+    return {"status": "sent", "snapshot_ids": snapshot_ids}
