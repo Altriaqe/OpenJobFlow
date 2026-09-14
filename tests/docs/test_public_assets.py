@@ -56,6 +56,10 @@ PUBLIC_TEXT_SUFFIXES = {
 PUBLIC_TEXT_FILENAMES = {"Dockerfile", "LICENSE"}
 
 
+def test_docker_context_excludes_project_virtualenvs() -> None:
+    assert ".venv*" in (ROOT / ".dockerignore").read_text(encoding="utf-8").splitlines()
+
+
 def _public_text_files_for_scan() -> list[Path]:
     result = subprocess.run(
         ["git", "ls-files", "-z"],
