@@ -38,3 +38,14 @@ def test_cny_monthly_salary_migration_updates_both_tables_and_view() -> None:
     assert "CREATE OR REPLACE VIEW mart.city_salary_stats" in normalized
     assert "WHEN salary_unit = 'CNY_PER_MONTH' THEN salary_min / 1000.0" in normalized
     assert "WHEN salary_unit = 'CNY_PER_MONTH' THEN salary_max / 1000.0" in normalized
+
+
+def test_weekly_salary_migration_updates_both_table_constraints() -> None:
+    path = Path("migrations/012_add_weekly_salary.sql")
+
+    assert path.exists()
+    normalized = " ".join(path.read_text(encoding="utf-8").split())
+
+    assert "ADD CONSTRAINT jobs_salary_values_check" in normalized
+    assert "ADD CONSTRAINT job_snapshot_items_salary_values_check" in normalized
+    assert normalized.count("'CNY_PER_WEEK'") == 2

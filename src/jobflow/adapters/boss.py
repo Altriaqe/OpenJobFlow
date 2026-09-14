@@ -25,6 +25,7 @@ class Salary:
 MONTHLY_SALARY_PATTERN = re.compile(r"^(\d+)-(\d+)K(?:·(\d+)薪)?$")
 MONTHLY_CNY_SALARY_PATTERN = re.compile(r"^(\d+)-(\d+)元/月$")
 DAILY_SALARY_PATTERN = re.compile(r"^(\d+)-(\d+)元/天$")
+WEEKLY_SALARY_PATTERN = re.compile(r"^(\d+)-(\d+)元/周$")
 HOURLY_SALARY_PATTERN = re.compile(r"^(\d+)-(\d+)元/时$")
 
 
@@ -88,6 +89,20 @@ def parse_salary(value: str) -> Salary:
             minimum=minimum_value,
             maximum=maximum_value,
             unit="CNY_PER_DAY",
+            months=None,
+        )
+
+    weekly_match = WEEKLY_SALARY_PATTERN.fullmatch(normalized)
+    if weekly_match:
+        minimum, maximum = weekly_match.groups()
+        minimum_value = int(minimum)
+        maximum_value = int(maximum)
+        _validate_salary_values(value, minimum_value, maximum_value, None)
+        return Salary(
+            source_text=value,
+            minimum=minimum_value,
+            maximum=maximum_value,
+            unit="CNY_PER_WEEK",
             months=None,
         )
 
