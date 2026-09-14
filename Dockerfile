@@ -13,7 +13,10 @@ ARG HTTP_PROXY
 ARG HTTPS_PROXY
 ARG NO_PROXY
 
-RUN apt-get update \
+RUN http_proxy="${HTTP_PROXY}" \
+    https_proxy="${HTTPS_PROXY}" \
+    no_proxy="${NO_PROXY}" \
+    apt-get update \
     && apt-get install --yes --no-install-recommends fonts-noto-cjk \
     && rm -rf /var/lib/apt/lists/* \
     && addgroup --system jobflow \
