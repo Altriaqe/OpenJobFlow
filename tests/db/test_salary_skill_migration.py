@@ -12,7 +12,9 @@ def test_salary_skill_migration_defines_core_fields_constraints_and_views() -> N
     assert "ADD COLUMN IF NOT EXISTS skills TEXT[]" in sql
     assert "jobs_salary_values_check" in sql
     assert "salary_max >= salary_min" in sql
-    assert "salary_unit IN ('K_PER_MONTH', 'CNY_PER_DAY', 'CNY_PER_HOUR')" in sql
+    assert "'CNY_PER_MONTH'" in sql
+    assert "'CNY_PER_WEEK'" in sql
+    assert "salary_text IS NOT NULL\n     AND salary_min IS NULL" in sql
     assert "CREATE OR REPLACE VIEW mart.city_salary_stats" in sql
     assert "WHERE salary_unit = 'K_PER_MONTH'" in sql
     assert "CREATE OR REPLACE VIEW mart.skill_job_counts" in sql
@@ -49,3 +51,16 @@ def test_weekly_salary_migration_updates_both_table_constraints() -> None:
     assert "ADD CONSTRAINT jobs_salary_values_check" in normalized
     assert "ADD CONSTRAINT job_snapshot_items_salary_values_check" in normalized
     assert normalized.count("'CNY_PER_WEEK'") == 2
+
+
+def test_every_replayed_salary_constraint_accepts_current_units() -> None:
+    for name in (
+        "005_add_salary_skill_analytics.sql",
+        "006_add_daily_job_snapshots.sql",
+        "008_add_cny_monthly_salary.sql",
+    ):
+        sql = Path("migrations", name).read_text(encoding="utf-8")
+
+        assert "'CNY_PER_MONTH'" in sql
+        assert "'CNY_PER_WEEK'" in sql
+        assert "salary_text IS NOT NULL" in sql

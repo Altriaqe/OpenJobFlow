@@ -22,6 +22,7 @@ ADD CONSTRAINT jobs_salary_values_check CHECK (
          'K_PER_MONTH',
          'CNY_PER_MONTH',
          'CNY_PER_DAY',
+         'CNY_PER_WEEK',
          'CNY_PER_HOUR'
      )
      AND (salary_months IS NULL OR salary_months > 0)
@@ -52,6 +53,7 @@ ADD CONSTRAINT job_snapshot_items_salary_values_check CHECK (
          'K_PER_MONTH',
          'CNY_PER_MONTH',
          'CNY_PER_DAY',
+         'CNY_PER_WEEK',
          'CNY_PER_HOUR'
      )
      AND (salary_months IS NULL OR salary_months > 0)
