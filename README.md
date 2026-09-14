@@ -309,6 +309,7 @@ Start with [.env.example](.env.example). The most common settings are:
 | Change database identity or host ports | `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_PORT` | Replace the example password before first start. |
 | Change API binding | `API_BIND_HOST`, `API_PORT` | The default binds to loopback for local use. |
 | Change Python package mirror or timeout | `PIP_INDEX_URL`, `PIP_DEFAULT_TIMEOUT` | Used while building the application image. |
+| Configure Docker build proxies | `JOBFLOW_BUILD_HTTP_PROXY`, `JOBFLOW_BUILD_HTTPS_PROXY`, `JOBFLOW_BUILD_NO_PROXY` | Separate from runtime proxy settings; use only on restricted networks. |
 | Configure direct application proxy variables | `JOBFLOW_HTTP_PROXY`, `JOBFLOW_HTTPS_PROXY`, `JOBFLOW_NO_PROXY` | Leave empty when direct access works. |
 | Enable AI summaries | `OPENAI_BASE_URL`, `OPENAI_API_KEY`, `OPENAI_MODEL` | Needed only for `mode=ai`. |
 | Enable Telegram reports | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `REPORT_TRIGGER_TOKEN` | Keep each secret private and separate. |
@@ -318,12 +319,12 @@ Start with [.env.example](.env.example). The most common settings are:
 | Change Telegram transport | `src/jobflow/channels/telegram.py` | Preserve uncertain-result handling. |
 | Change analytics | `src/jobflow/api/analytics.py`, `src/jobflow/db/analytics.py` | Keep public queries fixed and read-only. |
 | Change field normalization | `src/jobflow/adapters/boss.py` | Update Adapter tests and sample contracts. |
-| Change schema or marts | `migrations/*.sql` | Add a new migration; do not rewrite deployed history. |
+| Change schema or marts | `migrations/*.sql` | Prefer a new migration; the current runner replays all SQL, so older constraint recreations must remain forward-compatible. |
 | Change Ubuntu orchestration | `ops/daily_update.sh` | Run its Bash syntax and contract tests. |
 
 ### Optional proxy for restricted networks
 
-The default [compose.yaml](compose.yaml) uses direct networking. [compose.proxy.yaml](compose.proxy.yaml) optionally adds a user-managed Mihomo service and points application egress at `http://mihomo:7890`.
+The default [compose.yaml](compose.yaml) uses direct networking. [compose.proxy.yaml](compose.proxy.yaml) optionally adds a user-managed Mihomo service and points application egress at `http://mihomo:7890`. The proxy port binds only to host loopback for controlled Docker builds and is not exposed to the LAN.
 
 Copy [deploy/mihomo/config.example.yaml](deploy/mihomo/config.example.yaml) into a private runtime directory and replace its placeholders with your own subscription or provider configuration. Never commit proxy subscriptions, nodes, credentials, or the generated runtime configuration.
 

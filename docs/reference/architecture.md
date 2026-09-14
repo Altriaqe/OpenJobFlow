@@ -81,7 +81,7 @@ systemd timer 按计划启动每日 Shell。每日 Shell 在采集和 ETL 完成
 | `core` | `jobs` | 保存标准化、幂等去重后的岗位 |
 | `mart` | 3 个 View | 提供城市岗位、城市月薪和技能聚合 |
 
-当前 migration 位于 `migrations/001` 至 `010`：`009` 保存通用新增渠道投递状态，`010` 新增 `ops.wechat_draft_jobs`，以日期唯一约束记录正式公众号草稿的 `uploading`、`created` 和 `failed`。mart 使用普通 PostgreSQL View，core 数据变化后查询结果自动更新，不需要 refresh。
+当前 migration 位于 `migrations/001` 至 `012`：`009` 保存通用新增渠道投递状态，`010` 新增 `ops.wechat_draft_jobs`，`011` 保存运营检查与动作，`012` 允许以 `CNY_PER_WEEK` 保留周薪。周薪、日薪和时薪不进入月薪统计 View。mart 使用普通 PostgreSQL View，core 数据变化后查询结果自动更新，不需要 refresh。
 
 ### FastAPI
 
@@ -123,7 +123,7 @@ Docker Compose
 └─ mihomo    V1.2 可选服务器代理，仅 compose.proxy.yaml 启用
 ```
 
-默认 `compose.yaml` 不包含代理服务。网络受限部署显式叠加 `compose.proxy.yaml` 后，API 使用内部服务名 `mihomo:7890`；Mihomo 不发布宿主机端口，订阅保存在 Git 忽略的运行目录或通过 `MIHOMO_CONFIG_DIR` 指向的仓库外私有目录。
+默认 `compose.yaml` 不包含代理服务。网络受限部署显式叠加 `compose.proxy.yaml` 后，API 使用内部服务名 `mihomo:7890`；Mihomo 仅将代理端口绑定到宿主机回环地址 `127.0.0.1`，供宿主机上的受控构建使用，不向局域网公开。订阅保存在 Git 忽略的运行目录或通过 `MIHOMO_CONFIG_DIR` 指向的仓库外私有目录。
 
 宿主机 systemd 编排：
 

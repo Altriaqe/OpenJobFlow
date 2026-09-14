@@ -309,6 +309,7 @@ V1.3.5 增加正式公众号自动草稿：每日任务在生成文章包后上�
 | 修改数据库身份或宿主机端口 | `POSTGRES_DB`、`POSTGRES_USER`、`POSTGRES_PASSWORD`、`POSTGRES_PORT` | 首次启动前替换示例密码。 |
 | 修改 API 绑定 | `API_BIND_HOST`、`API_PORT` | 默认绑定回环地址供本地使用。 |
 | 修改 Python 包镜像或超时 | `PIP_INDEX_URL`、`PIP_DEFAULT_TIMEOUT` | 构建应用镜像时使用。 |
+| 配置 Docker 构建代理 | `JOBFLOW_BUILD_HTTP_PROXY`、`JOBFLOW_BUILD_HTTPS_PROXY`、`JOBFLOW_BUILD_NO_PROXY` | 与容器运行时代理分开；仅在受限网络中设置。 |
 | 配置应用直连代理变量 | `JOBFLOW_HTTP_PROXY`、`JOBFLOW_HTTPS_PROXY`、`JOBFLOW_NO_PROXY` | 网络可直连时留空。 |
 | 启用 AI 总结 | `OPENAI_BASE_URL`、`OPENAI_API_KEY`、`OPENAI_MODEL` | 仅 `mode=ai` 需要。 |
 | 启用 Telegram 报告 | `TELEGRAM_BOT_TOKEN`、`TELEGRAM_CHAT_ID`、`REPORT_TRIGGER_TOKEN` | 各项密钥保持私有并相互独立。 |
@@ -318,12 +319,12 @@ V1.3.5 增加正式公众号自动草稿：每日任务在生成文章包后上�
 | 修改 Telegram 传输 | `src/jobflow/channels/telegram.py` | 保留不确定结果的处理逻辑。 |
 | 修改分析能力 | `src/jobflow/api/analytics.py`、`src/jobflow/db/analytics.py` | 保持公开查询固定且只读。 |
 | 修改字段标准化 | `src/jobflow/adapters/boss.py` | 同步更新 Adapter 测试和样本契约。 |
-| 修改 Schema 或 Mart | `migrations/*.sql` | 添加新 Migration，不要重写已部署历史。 |
+| 修改 Schema 或 Mart | `migrations/*.sql` | 优先添加新 Migration；当前重放全部 SQL，任何重复创建约束的历史文件也必须保持向前兼容。 |
 | 修改 Ubuntu 编排 | `ops/daily_update.sh` | 运行 Bash 语法和契约测试。 |
 
 ### 受限网络的可选代理
 
-默认 [compose.yaml](compose.yaml) 使用直连网络。[compose.proxy.yaml](compose.proxy.yaml) 可选地添加用户自行管理的 Mihomo 服务，并让应用出站使用 `http://mihomo:7890`。
+默认 [compose.yaml](compose.yaml) 使用直连网络。[compose.proxy.yaml](compose.proxy.yaml) 可选地添加用户自行管理的 Mihomo 服务，并让应用出站使用 `http://mihomo:7890`。代理端口仅绑定宿主机 `127.0.0.1`，可供受控 Docker 构建使用，不向局域网公开。
 
 将 [deploy/mihomo/config.example.yaml](deploy/mihomo/config.example.yaml) 复制到私有运行目录，再用你自己的订阅或 provider 配置替换占位符。不要提交代理订阅、节点、凭据或生成后的运行配置。
 
