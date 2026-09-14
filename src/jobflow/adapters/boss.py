@@ -30,7 +30,8 @@ HOURLY_SALARY_PATTERN = re.compile(r"^(\d+)-(\d+)元/时$")
 
 def parse_salary(value: str) -> Salary:
     """将 BOSS 薪资原文解析为统一薪资结构。"""
-    if value == "面议":
+    normalized = value.strip().translate(str.maketrans({"–": "-", "—": "-"}))
+    if normalized == "面议":
         return Salary(
             source_text=value,
             minimum=None,
@@ -39,7 +40,7 @@ def parse_salary(value: str) -> Salary:
             months=None,
         )
 
-    monthly_match = MONTHLY_SALARY_PATTERN.fullmatch(value)
+    monthly_match = MONTHLY_SALARY_PATTERN.fullmatch(normalized)
     if monthly_match:
         minimum, maximum, months = monthly_match.groups()
         minimum_value = int(minimum)
@@ -54,7 +55,7 @@ def parse_salary(value: str) -> Salary:
             months=months_value,
         )
 
-    monthly_cny_match = MONTHLY_CNY_SALARY_PATTERN.fullmatch(value)
+    monthly_cny_match = MONTHLY_CNY_SALARY_PATTERN.fullmatch(normalized)
     if monthly_cny_match:
         minimum_cny, maximum_cny = (int(item) for item in monthly_cny_match.groups())
         _validate_salary_values(value, minimum_cny, maximum_cny, None)
@@ -74,7 +75,7 @@ def parse_salary(value: str) -> Salary:
             months=None,
         )
 
-    daily_match = DAILY_SALARY_PATTERN.fullmatch(value)
+    daily_match = DAILY_SALARY_PATTERN.fullmatch(normalized)
     if daily_match:
         minimum, maximum = daily_match.groups()
         minimum_value = int(minimum)
@@ -88,7 +89,7 @@ def parse_salary(value: str) -> Salary:
             months=None,
         )
 
-    hourly_match = HOURLY_SALARY_PATTERN.fullmatch(value)
+    hourly_match = HOURLY_SALARY_PATTERN.fullmatch(normalized)
     if hourly_match:
         minimum, maximum = hourly_match.groups()
         minimum_value = int(minimum)

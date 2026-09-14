@@ -21,6 +21,7 @@ from jobflow.models.job import JobRecord
         ("15-25K·14薪", (15, 25, "K_PER_MONTH", 14)),
         ("5000-7000元/月", (5, 7, "K_PER_MONTH", None)),
         ("3500-5500元/月", (3500, 5500, "CNY_PER_MONTH", None)),
+        (" 500–1000元/月 ", (500, 1000, "CNY_PER_MONTH", None)),
         ("200-300元/天", (200, 300, "CNY_PER_DAY", None)),
         ("50-60元/时", (50, 60, "CNY_PER_HOUR", None)),
     ],
