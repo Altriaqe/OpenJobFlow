@@ -30,7 +30,9 @@ HOURLY_SALARY_PATTERN = re.compile(r"^(\d+)-(\d+)元/时$")
 
 def parse_salary(value: str) -> Salary:
     """将 BOSS 薪资原文解析为统一薪资结构。"""
-    normalized = value.strip().translate(str.maketrans({"–": "-", "—": "-"}))
+    normalized = value.strip().translate(
+        str.maketrans({character: "-" for character in "‐‑‒–—―−"})
+    )
     if normalized == "面议":
         return Salary(
             source_text=value,
