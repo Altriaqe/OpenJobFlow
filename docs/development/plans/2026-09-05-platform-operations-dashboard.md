@@ -16,7 +16,7 @@
 - Require an explicit `report_date` for independent Telegram and WeChat actions.
 - WeChat creates a draft only; final publication remains manual.
 - Never automatically retry uncertain external results.
-- Keep real credentials and private server values outside Git and the knowledge vault.
+- Keep real credentials and private server values outside Git.
 
 ## Task 1: Configuration and Schema
 

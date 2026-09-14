@@ -257,7 +257,7 @@ Windows 本机关机、TigerVNC 关闭、SSH 隧道关闭都不影响 Ubuntu 定
 
 - 更新根 README 的维护、自动发送和故障恢复说明；
 - 更新 Ubuntu 部署文档和正式项目交接；
-- 更新 Obsidian systemd、Telegram、V1.1 和 Day 22 笔记；
+- 更新项目 systemd、Telegram 和 V1.1 交接文档；
 - 不创建 Day 23；
 - 不提交 `.env`、真实快照、Profile 或 systemd 服务器本地敏感文件；
 - 任何 commit 或 push 必须获得用户明确授权。

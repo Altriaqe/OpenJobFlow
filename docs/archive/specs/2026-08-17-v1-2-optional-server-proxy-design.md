@@ -16,7 +16,7 @@ V1.2 将这一经验整理为公开、可选、无个人秘密的服务器代理
 - Mihomo 代理端口只在 Docker 内部网络暴露，不发布宿主机端口。
 - API 通过服务名 `mihomo:7890` 使用代理。
 - 默认直连用户无需安装或配置 Mihomo。
-- README、Ubuntu 部署、架构、交接和知识库同步记录 V1.2。
+- README、Ubuntu 部署、架构和交接文档记录 V1.2。
 
 ## 非目标
 
@@ -73,7 +73,7 @@ docker compose -f compose.yaml -f compose.proxy.yaml up -d postgres api mihomo
 - Mihomo 不发布宿主机端口。
 - API 的 `NO_PROXY` 保留 PostgreSQL 与本机地址。
 - README 明确容器 `127.0.0.1` 不是宿主机。
-- 公开文档只写通用命令；真实服务器路径和维护细节进入个人知识库，但仍不记录订阅正文。
+- 公开文档只写通用命令，不记录真实服务器路径、订阅正文或个人维护细节。
 
 ## 验收层级
 

@@ -134,19 +134,18 @@
 - [ ] Step 4: 记录测试用例和服务器联调待办，不执行 Ubuntu 命令。
 - [ ] Step 5: 等待用户明确授权后再创建提交；未经授权不得 push。
 
-## Task 8: 全项目链路注释与知识卡片
+## Task 8: 全项目链路注释与项目文档
 
 **Files:**
 - Modify: `src/jobflow/adapters`, `src/jobflow/collectors`, `src/jobflow/models`, `src/jobflow/db`, `src/jobflow/workers`, `src/jobflow/reports`, `src/jobflow/ai`, `src/jobflow/api`, `src/jobflow/channels`, `src/jobflow/cli.py`, `src/jobflow/snapshot_backfill.py`, `ops/daily_update.sh`
 - Modify: `docs/reference/architecture.md`, `docs/development/learning-notes.md`, `docs/project-handoff.md`
-- Modify: `<OBSIDIAN_VAULT>/JobFlow/JobFlow 项目总览.md`, `JobFlow 项目架构与演进设计.md`
 
 - [ ] Step 1: 为每个 Python 模块补充模块职责、上游输入、下游输出和失败边界说明。
 - [ ] Step 2: 为公开函数和关键私有函数补充中文 docstring，说明参数、返回值、事务或幂等原因；不改业务逻辑。
 - [ ] Step 3: 在 `docs/reference/architecture.md` 增加端到端链路图：采集 → Adapter → ETL → PostgreSQL → FastAPI → 报告 → Telegram/微信。
 - [ ] Step 4: 为每个入口补充注释：CLI、FastAPI `create_app`、报告路由、每日 Shell、快照回填入口。
 - [ ] Step 5: 每层运行对应测试和 `git diff --check`，确认注释变更不改变行为。
-- [ ] Step 6: 将已完成的解释同步到项目学习文档和 Obsidian 卡片，保留真实配置脱敏边界。
+- [ ] Step 6: 将已完成的解释同步到项目学习文档，保留真实配置脱敏边界。
 
 ## Self-Review Checklist
 

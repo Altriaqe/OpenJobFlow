@@ -892,7 +892,7 @@ Expected: the first two commands return status objects and the three analytics c
 
 - [ ] **Step 10: Record final operational evidence**
 
-Capture these non-secret facts for the daily summary and Obsidian update after all checks pass:
+Capture these non-secret facts in the project handoff after all checks pass:
 
 ```text
 deployed commit hash

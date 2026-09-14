@@ -4,13 +4,9 @@
 
 这份文档是上下文压缩、新对话、换电脑或暂停开发后的第一入口。继续开发前先读取本文件，再用代码、测试、Git 和服务器实际输出确认可能变化的状态。
 
-## 2026-09-14 日报跨日恢复完成
+## 2026-09-15 当前状态
 
-9 月 14 日每日任务抓取成功后，ETL 先后暴露人民币月薪横线变体和 `元/周` 格式。薪资解析现已兼容 Unicode 横线与周薪，数据库约束增加 `CNY_PER_WEEK`；同时修复旧 migration 在全量重放时恢复过时薪资约束的问题。相关提交为 `b9acb35`、`f9003c7`、`d2cd3f8` 和 `134de7f`。
-
-服务器 Mihomo 订阅刷新后，Telegram `getMe`、PyPI 和 Debian 下载源均恢复。服务器已更新到 `134de7f`，Migration 001 至 012 重放成功，新应用镜像和 API `/ready` 通过。失败时保留的 9 月 14 日首个关键词文件完成 ETL，其余三个关键词在跨日恢复中重新抓取；最终四关键词快照和文章包可用，微信公众号草稿为 `created`，Telegram 为 `sent`，维护者确认手机端收到。
-
-本次是人工跨日恢复，不等于 9 月 14 日 timer 自动成功，也不证明代理、BOSS 登录和外部网络已长期稳定。下一步继续观察后续 timer，并单独优化 Dockerfile 的依赖缓存层；真实订阅、节点、Token、Chat ID 和服务器私有配置仍不得进入 Git。
+薪资解析已支持更多分隔符和周薪，相关 migration 可重复执行，功能基线为 `134de7f`。9 月 14 日四关键词快照、Telegram 投递和微信公众号草稿已通过人工恢复完成；该结果不代表定时任务已经连续稳定运行。
 
 ## 2026-09-13 Telegram 全量恢复已部署并完成
 
@@ -437,7 +433,7 @@ Windows：main 与 origin/main 在 eefad84，工作区在本轮文档维护前�
 Windows 当前未提交：README.md、docs/reference/architecture.md、docs/project-handoff.md、docs/guides/ubuntu-deployment.md 的 V1.2 真实验收更新
 Ubuntu：main 与 origin/main 在 eefad84，工作区同步时干净
 Ubuntu：服务器手工脚本已另存到项目外备份后，使用仓库内可执行版本
-排除：.env、真实数据、Chrome Profile、Cookie、订阅、VNC 凭据和个人知识库
+排除：.env、真实数据、Chrome Profile、Cookie、订阅和 VNC 凭据
 ```
 
 上述 Ubuntu Git 状态来自 2026-08-17 迁移前的实际输出；之后仍可能变化。服务器另有 `/etc/systemd/system/` 单元、私有 `.env`、`/etc/jobflow-mihomo` 和项目外脚本备份。
@@ -602,7 +598,6 @@ V1.2 已专用于可选服务器代理；V1.3 已完成的四城市三页范围�
 这是 OpenJobFlow 项目，请先完整阅读 <LOCAL_JOBFLOW_DIR>/docs/project-handoff.md，
 再读取 docs/guides/wechat-official-draft.md、docs/reference/architecture.md、
 git status 和最近 8 个提交。
-个人知识库路径只在本机私有维护文档中记录，不进入公开仓库。
 请以代码、测试和 Git 为正式事实来源，不要把计划写成已完成。
 我是初学者，指导时说明目标、步骤、结果、为什么这样做和知识点；
 如果我的表达不符合业务术语，请转换为规范业务语句后理解。
@@ -617,6 +612,6 @@ git status 和最近 8 个提交。
 1. 更新本文件的完成度、验证结果、Git 停点和下一步；
 2. 启动或部署变化同步更新 `ubuntu-deployment.md`；
 3. 架构边界变化同步更新 `architecture.md`；
-4. 把已完成的学习结果同步到 Obsidian，不提前创建未来 Day；
+4. 只把已完成并验证的结果更新到项目交接文档；
 5. 运行测试、Ruff、链接和敏感信息检查；
 6. 只有用户明确要求时才 commit 或 push。

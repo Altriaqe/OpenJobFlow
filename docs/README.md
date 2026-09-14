@@ -36,7 +36,6 @@
 - [`operations/2026-08-25-daily-update-production-acceptance.md`](operations/2026-08-25-daily-update-production-acceptance.md)：API 就绪等待修复后的正式日报验收记录。
 - [`operations/2026-09-04-dual-channel-stability.md`](operations/2026-09-04-dual-channel-stability.md)：V1.3.5 微信公众号与 Telegram 双渠道稳定发送观察记录。
 - [`operations/2026-09-05-poweroutage-recovery.md`](operations/2026-09-05-poweroutage-recovery.md)：服务器断电重启后的双线路手动恢复记录。
-- [`operations/2026-09-14-daily-recovery.md`](operations/2026-09-14-daily-recovery.md)：代理、薪资格式和 migration 重放故障的跨日恢复记录。
 - [`archive/README.md`](archive/README.md)：已完成或被替代的历史设计与实施计划。
 
 ## 维护规则
@@ -46,5 +45,5 @@
 - 架构边界变化时更新 `reference/architecture.md`；
 - 当前开发资料进入 `development/`，完成或被替代后移入 `archive/`；
 - 不在文档中记录 `.env` 实际值、密码、API Key、Webhook、Token、Cookie 或私钥；
-- 公开文档只使用服务器、用户名和目录占位符，真实个人环境只记录在私有知识库；
+- 公开文档只使用服务器、用户名和目录占位符，不记录真实个人环境；
 - 不把“代码已写”表述为“外部服务已真实联调”或“生产环境已上线”。

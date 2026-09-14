@@ -1542,7 +1542,6 @@ git commit -m "feat: audit and safely backfill snapshots"
 - Modify after evidence: `docs/reference/architecture.md`
 - Modify after evidence: `docs/project-handoff.md`
 - Modify after evidence: `docs/guides/ubuntu-deployment.md`
-- Update after completion: `<KNOWLEDGE_VAULT>` using its established daily-note and knowledge-card structure.
 
 **Interfaces:**
 
@@ -1657,11 +1656,9 @@ optional proxy requirement without personal subscription details
 maintenance, logs, retry, and VNC login recovery
 ```
 
-Private knowledge base records the actual server paths, systemd units, commands, expected results, comparison formulas, Matplotlib/PNG flow, Telegram multipart upload, message-id idempotency, migration, task lock, time lock, and same-scope comparison rule. Create or update only the 2026-08-18 daily note; do not pre-create a future date.
-
 - [ ] **Step 11: Run documentation safety checks**
 
-Search all changed Markdown for actual tokens, keys, subscriptions, passwords, webhooks, cookies, private keys, personal `.env` values, unclosed fences, and unresolved placeholders. Verify public examples use neutral placeholders and private notes contain no secret values.
+Search all changed Markdown for actual tokens, keys, subscriptions, passwords, webhooks, cookies, private keys, personal `.env` values, unclosed fences, and unresolved placeholders. Verify public examples use neutral placeholders.
 
 - [ ] **Step 12: Approval-gated final documentation commit**
 
@@ -1670,7 +1667,7 @@ git add README.md docs/reference/architecture.md docs/project-handoff.md docs/gu
 git commit -m "docs: document JobFlow V1.3 operations"
 ```
 
-Do not stage `.superpowers/`, real data, `.env`, or private Obsidian notes. Do not run the commit or push without explicit authorization.
+Do not stage `.superpowers/`, real data, or `.env`. Do not run the commit or push without explicit authorization.
 
 ## Final Acceptance Checklist
 
@@ -1686,5 +1683,5 @@ Do not stage `.superpowers/`, real data, `.env`, or private Obsidian notes. Do n
 - [ ] Telegram text arrives before PNG.
 - [ ] Photo retry does not duplicate text.
 - [ ] Local full suite, Compose build, migration, Ubuntu manual run, and five-minute timer all pass.
-- [ ] README, handoff, deployment guide, architecture, and knowledge base reflect only verified status.
+- [ ] README, handoff, deployment guide, and architecture reflect only verified status.
 - [ ] No secret or personal subscription value appears in Git or logs.

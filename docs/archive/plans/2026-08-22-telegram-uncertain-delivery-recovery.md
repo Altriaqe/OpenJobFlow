@@ -1123,7 +1123,7 @@ systemctl list-timers jobflow-daily-update.timer --all
 
 Expected: 状态为 `completed_text_uncertain`、`photo_sent=true`、`manual_action_required=false`；timer 为 `active`，并显示下一次 Asia/Shanghai 09:00 运行时间。
 
-- [ ] **Step 8: 服务器验收后维护公开与个人文档**
+- [ ] **Step 8: 服务器验收后维护项目文档**
 
 在 `README.md` 和 `docs/guides/ubuntu-deployment.md` 增加以下公开说明，所有个人值继续使用占位：
 
@@ -1144,4 +1144,4 @@ git commit -m "docs: 更新 Telegram 防重复与只补图维护说明"
 git push origin main
 ```
 
-知识库只在服务器真实验收完成后按既有 JobFlow 卡片和每日记录结构更新；不提前创建未完成日期的成果记录。
+项目交接只在服务器真实验收完成后更新，不把未完成结果写成已验收。

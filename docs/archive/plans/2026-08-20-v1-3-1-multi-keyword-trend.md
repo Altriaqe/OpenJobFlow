@@ -983,7 +983,7 @@ git status --short --branch
 git diff --name-status
 ```
 
-不得纳入 `.env`、真实抓取 JSON、`runtime/` 私有配置、`.superpowers/brainstorm/`、Token、Cookie、Chrome Profile 或知识库。
+不得纳入 `.env`、真实抓取 JSON、`runtime/` 私有配置、`.superpowers/brainstorm/`、Token、Cookie 或 Chrome Profile。
 
 - [ ] **Step 4: 在获授权后提交代码并推送**
 

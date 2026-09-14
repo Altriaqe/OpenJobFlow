@@ -435,7 +435,7 @@ Expected: formal timer is still `enabled`, `active (waiting)`, and scheduled for
 - Modify: `README.md`
 - Modify: `docs/guides/ubuntu-deployment.md`
 - Modify: `docs/project-handoff.md`
-- Modify relevant Obsidian cards listed in File Structure.
+- Modify the relevant project handoff and operations documents.
 
 **Interfaces:**
 - Consumes: server script that passed the five-minute real Telegram test.

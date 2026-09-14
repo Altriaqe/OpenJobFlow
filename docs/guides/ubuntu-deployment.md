@@ -266,27 +266,6 @@ docker inspect "$(docker compose -f compose.yaml -f compose.proxy.yaml ps -q mih
 
 正常应显示 `restart=unless-stopped`，并且 `7890/tcp` 只绑定 `127.0.0.1`。该回环端口供宿主机 Docker build 使用，不向局域网公开。配置语法通过后仍需在 API 容器内调用真实外部服务，才能确认订阅和节点可用。
 
-更新私有订阅后，先校验再重启，不要输出配置正文：
-
-```bash
-docker compose -f compose.yaml -f compose.proxy.yaml \
-  run --rm --no-deps mihomo \
-  -t -d /root/.config/mihomo
-
-docker compose -f compose.yaml -f compose.proxy.yaml restart mihomo
-```
-
-构建阶段不能使用容器内部地址 `mihomo:7890`。宿主机回环代理可通过构建参数传入：
-
-```bash
-PIP_INDEX_URL=https://pypi.org/simple \
-JOBFLOW_BUILD_HTTP_PROXY=http://127.0.0.1:7890 \
-JOBFLOW_BUILD_HTTPS_PROXY=http://127.0.0.1:7890 \
-docker compose -f compose.yaml -f compose.proxy.yaml build api
-```
-
-当前 migration 工具会按文件名重放全部 SQL。每个 migration 必须成功且没有 `psql` 错误；失败后不要继续 ETL，应先确认被重建的约束是否仍存在。
-
 ## V1.1 每日更新与 Telegram
 
 当前宿主机 systemd 服务：

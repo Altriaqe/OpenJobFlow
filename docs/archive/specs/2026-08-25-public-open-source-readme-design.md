@@ -292,7 +292,7 @@ Copyright (c) 2026 Altriaqe
 - Mihomo 订阅链接、节点和代理凭据；
 - 真实招聘快照、个人 Telegram 截图和包含个人运行环境的终端截图。
 
-文档使用 `<YOUR_...>`、`<SERVER_IP>`、`<JOBFLOW_DIR>` 等占位符。公开 README 不引用私有 Obsidian 路径。
+文档使用 `<YOUR_...>`、`<SERVER_IP>`、`<JOBFLOW_DIR>` 等占位符，不引用私有本机路径。
 
 ## 13. 实施验收
 

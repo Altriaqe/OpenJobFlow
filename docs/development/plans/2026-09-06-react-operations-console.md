@@ -33,4 +33,4 @@ JobFlow uses an independent React + Vite + TypeScript frontend for the operator 
 
 - `npm run build` must pass before frontend changes are accepted.
 - API integration must be tested against the existing FastAPI contract before enabling buttons.
-- Credentials remain environment/server-side and are never copied into the knowledge vault or client bundle.
+- Credentials remain environment/server-side and are never copied into Git or the client bundle.

@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 为 JobFlow 提供不影响默认部署的可选 Mihomo 服务器代理覆盖，并完成公开文档、真实 Ubuntu 迁移和知识库同步。
+**Goal:** 为 JobFlow 提供不影响默认部署的可选 Mihomo 服务器代理覆盖，并完成公开文档和真实 Ubuntu 迁移。
 
 **Architecture:** 默认 `compose.yaml` 保持直连；`compose.proxy.yaml` 只在用户显式指定时加入 Mihomo，并覆盖 API 的标准代理环境变量。订阅配置由公开模板复制到 Git 忽略的 `runtime/mihomo`，代理端口只存在于 Compose 内部网络。
 
@@ -15,7 +15,7 @@
 - Mihomo 不配置 `ports`。
 - 用户亲手执行 Ubuntu 迁移命令。
 - 未经明确授权不 commit 或 push。
-- 只把实际验证完成的状态写入交接和知识库。
+- 只把实际验证完成的状态写入项目交接。
 
 ---
 
@@ -199,24 +199,3 @@ docker compose -f compose.yaml -f compose.proxy.yaml up -d postgres api mihomo
 - [ ] **Step 3: 真实验收**
 
 检查 Compose 服务、`port_bindings={}`、API `HTTPS_PROXY`、Docker DNS、Telegram `getMe`、`mode=query` 和手机实收。
-
----
-
-### Task 6: Synchronize the Private Knowledge Base
-
-**Files:**
-- Modify: `JobFlow Day 23 - Ubuntu Mihomo 长期代理.md`
-- Modify: `Mihomo 与 Docker 内部代理小白指南.md`
-- Modify: server maps, Docker commands, project overview, V1.1 guide and glossary
-
-- [ ] **Step 1: 把独立 `docker run` 更新为 V1.2 Compose 管理方式**
-
-保留迁移历史，但把日常维护命令切换为带两个 `-f` 的 Compose 命令。
-
-- [ ] **Step 2: 运行围栏、Wiki Link 和敏感信息检查**
-
-Expected: 围栏成对、链接可解析、无真实订阅和 Token。
-
-- [ ] **Step 3: 最终 Git 状态与完成边界**
-
-说明公开仓库提交状态、Ubuntu 实际提交、即时真实验收、下一次正式 timer 和连续多日边界。

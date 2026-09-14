@@ -23,7 +23,7 @@ V1.3.4 已实现服务器生成文章包、Windows 下载与校验，正式公�
 - 不修改 Telegram 报告内容、发送状态机或时序；
 - 不让微信失败回滚已成功的 ETL；
 - 不自动重试结果不确定的微信请求；
-- 不把真实 appid、appsecret、access_token、素材 ID、Cookie 或服务器配置写入代码、Git、日志或知识库。
+- 不把真实 appid、appsecret、access_token、素材 ID、Cookie 或服务器配置写入代码、Git 或日志。
 
 ## Architecture
 
