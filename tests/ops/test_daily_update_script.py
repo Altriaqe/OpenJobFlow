@@ -126,7 +126,18 @@ def test_daily_update_runs_telegram_and_wechat_article_generation_in_parallel() 
     assert 'generate_wechat_article "$SNAPSHOT_DATE" &' in text
     assert 'wait "$telegram_pid"' in text
     assert 'wait "$wechat_article_pid"' in text
-    assert 'if [[ "$telegram_status" -ne 0 || "$wechat_article_status" -ne 0 ]]' in text
+    assert 'if [[ "$telegram_status" -ne 0 || "$wechat_article_status" -ne 0 || "$wechat_draft_status" -ne 0 ]]' in text
     assert "/reports/daily/multi/wechat/article/generate?snapshot_date=" in text
     assert "/reports/daily/multi/wechat/send?snapshot_date=" not in text
     assert 'allowed = {"generated"}' in text
+
+
+def test_daily_update_fails_when_wechat_draft_is_not_created() -> None:
+    text = read_script()
+
+    assert 'status = payload.get("status")' in text
+    assert 'has_draft = payload.get("has_draft") is True' in text
+    assert 'if status != "created" or not has_draft:' in text
+    assert 'wechat_draft_status=0' in text
+    assert 'create_wechat_draft "$SNAPSHOT_DATE" || wechat_draft_status=$?' in text
+    assert '"$wechat_draft_status" -ne 0' in text

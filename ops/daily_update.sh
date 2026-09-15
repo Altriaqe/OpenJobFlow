@@ -260,7 +260,14 @@ except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, json.JSONDe
 if not isinstance(payload, dict):
     print("微信草稿接口返回无效", file=sys.stderr)
     raise SystemExit(1)
-print(f"微信草稿状态：{payload.get('status')}，已创建={payload.get('has_draft')}")
+status = payload.get("status")
+has_draft = payload.get("has_draft") is True
+print(
+    f"微信草稿状态：{status}，已创建={has_draft}，"
+    f"错误码={payload.get('error_code')}"
+)
+if status != "created" or not has_draft:
+    raise SystemExit(1)
 PY
 }
 
@@ -411,15 +418,14 @@ wait "$wechat_article_pid"
 wechat_article_status=$?
 set -e
 
+wechat_draft_status=0
 if [[ "$wechat_article_status" -eq 0 ]]; then
-    # 草稿是人工审核入口；失败只记录状态，不回滚文章包，也不影响 Telegram。
-    if ! create_wechat_draft "$SNAPSHOT_DATE"; then
-        echo "微信草稿创建失败，保留文章包并继续" >&2
-    fi
+    # 草稿是人工审核入口；失败不回滚文章包，但必须让 service 标记失败。
+    create_wechat_draft "$SNAPSHOT_DATE" || wechat_draft_status=$?
 fi
 
-if [[ "$telegram_status" -ne 0 || "$wechat_article_status" -ne 0 ]]; then
-    echo "渠道汇总失败：Telegram=$telegram_status，微信文章=$wechat_article_status" >&2
+if [[ "$telegram_status" -ne 0 || "$wechat_article_status" -ne 0 || "$wechat_draft_status" -ne 0 ]]; then
+    echo "渠道汇总失败：Telegram=$telegram_status，微信文章=$wechat_article_status，微信草稿=$wechat_draft_status" >&2
     exit 1
 fi
 
