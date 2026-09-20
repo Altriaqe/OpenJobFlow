@@ -18,6 +18,14 @@
 
 _Demo output generated from fully synthetic data. It does not represent full-market demand._
 
+## Current Status
+
+**V1.3.6 is a stability and observability maintenance release.** The current public baseline includes the layered ETL pipeline, read-only analytics API, Telegram delivery, and optional WeChat Official Account draft creation. Telegram and WeChat keep independent failure boundaries; a WeChat draft failure now makes the daily service fail visibly instead of reporting an overall success while leaving the draft incomplete.
+
+The latest operational observation confirmed both delivery paths after an operator restored an expired BOSS login through the virtual desktop. This is a manual recovery sample, not a high-availability guarantee. Self-hosted deployments still need an operator to restore the browser login when the upstream session expires.
+
+This project version describes the public application and documentation baseline. It does not change the Python package version in `pyproject.toml`.
+
 ## Why JobFlow
 
 Recruitment data projects often mix collection, cleaning, storage, analysis, AI, and delivery into one script. That makes failures difficult to isolate and makes a public demonstration depend on private accounts or live websites.
@@ -64,7 +72,7 @@ flowchart LR
     J --> M["Windows download helper<br/>manual fallback"]
 ```
 
-The AI layer does not connect directly to PostgreSQL and cannot execute arbitrary SQL. It only receives the structured results returned by fixed application queries. Delivery channels do not participate in collection, normalization, or database writes. Telegram and WeChat have independent failure boundaries. V1.3.5 uploads the generated assets and creates a formal Official Account draft automatically; an operator still reviews and publishes it manually. The Windows helper remains a fallback.
+The AI layer does not connect directly to PostgreSQL and cannot execute arbitrary SQL. It only receives the structured results returned by fixed application queries. Delivery channels do not participate in collection, normalization, or database writes. Telegram and WeChat have independent failure boundaries. V1.3.6 retains the V1.3.5 formal Official Account draft flow, while making draft failure visible to the daily service; an operator still reviews and publishes drafts manually. The Windows helper remains a fallback.
 
 ## Quick Start
 
@@ -285,6 +293,8 @@ V1.3.2 adds an optional WeChat test-account template channel and a local article
 V1.3.4 adds an optional Windows download helper for self-hosted operators. It reads machine-specific SSH settings from local environment variables or command-line parameters, downloads one generated package, validates its manifest and required files, and leaves title, author, preview, and publishing under manual control. See the [Windows article-package download guide](docs/guides/wechat-article-download.md).
 
 V1.3.5 adds automatic formal Official Account draft creation after article generation. It uploads the permanent cover and inline trend image, sends explicit UTF-8 JSON with WeChat-compatible inline styles, and records one idempotent draft state per date through Migration 010. A draft failure does not undo ETL or Telegram delivery, and JobFlow neither retries uncertain draft requests nor publishes automatically. See the [Official Account draft and troubleshooting guide](docs/guides/wechat-official-draft.md).
+
+V1.3.6 is a stability and observability maintenance release. The daily workflow now exposes a failed WeChat draft as a failed overall run instead of masking it as success, while preserving the independent ETL and Telegram results. The project does not claim automatic recovery from expired upstream login sessions or high availability.
 
 ## Ubuntu Deployment
 
