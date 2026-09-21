@@ -20,7 +20,7 @@ _Demo output generated from fully synthetic data. It does not represent full-mar
 
 ## Current Status
 
-**V1.3.6 is a stability and observability maintenance release.** The current public baseline includes the layered ETL pipeline, read-only analytics API, Telegram delivery, and optional WeChat Official Account draft creation. Telegram and WeChat keep independent failure boundaries; a WeChat draft failure now makes the daily service fail visibly instead of reporting an overall success while leaving the draft incomplete.
+**V1.3.7 is a stability and observability maintenance release.** The current public baseline includes the layered ETL pipeline, read-only analytics API, Telegram delivery, and optional WeChat Official Account draft creation. Telegram and WeChat keep independent failure boundaries; a WeChat draft failure now makes the daily service fail visibly instead of reporting an overall success while leaving the draft incomplete.
 
 The latest operational observation confirmed both delivery paths after an operator restored an expired BOSS login through the virtual desktop. This is a manual recovery sample, not a high-availability guarantee. Self-hosted deployments still need an operator to restore the browser login when the upstream session expires.
 
@@ -294,7 +294,7 @@ V1.3.4 adds an optional Windows download helper for self-hosted operators. It re
 
 V1.3.5 adds automatic formal Official Account draft creation after article generation. It uploads the permanent cover and inline trend image, sends explicit UTF-8 JSON with WeChat-compatible inline styles, and records one idempotent draft state per date through Migration 010. A draft failure does not undo ETL or Telegram delivery, and JobFlow neither retries uncertain draft requests nor publishes automatically. See the [Official Account draft and troubleshooting guide](docs/guides/wechat-official-draft.md).
 
-V1.3.6 is a stability and observability maintenance release. The daily workflow now exposes a failed WeChat draft as a failed overall run instead of masking it as success, while preserving the independent ETL and Telegram results. The project does not claim automatic recovery from expired upstream login sessions or high availability.
+V1.3.6 added visible failure handling for incomplete WeChat drafts. V1.3.7 adds safe stage-level error codes for token retrieval, cover upload, article-image upload, and draft request failures. The daily workflow still preserves the independent ETL and Telegram results, and the project does not claim automatic recovery from expired upstream login sessions or high availability.
 
 ## Ubuntu Deployment
 

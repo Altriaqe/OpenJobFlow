@@ -86,13 +86,28 @@ def create_wechat_draft_from_article(
     connection.commit()
     try:
         article_html, title = _load_package(Path(article_dir), report_date)
-        token = get_wechat_access_token()
-        cover = upload_image(
-            access_token=token, path=Path(article_dir) / "cover.png", permanent=True
-        )
-        trend = upload_image(
-            access_token=token, path=Path(article_dir) / "trend.png", permanent=False
-        )
+        try:
+            token = get_wechat_access_token()
+        except Exception as exc:
+            raise WechatDeliveryError(
+                "WeChat access token stage failed", error_code="wechat_token_failed"
+            ) from exc
+        try:
+            cover = upload_image(
+                access_token=token, path=Path(article_dir) / "cover.png", permanent=True
+            )
+        except Exception as exc:
+            raise WechatDeliveryError(
+                "WeChat cover upload stage failed", error_code="wechat_cover_upload_failed"
+            ) from exc
+        try:
+            trend = upload_image(
+                access_token=token, path=Path(article_dir) / "trend.png", permanent=False
+            )
+        except Exception as exc:
+            raise WechatDeliveryError(
+                "WeChat article image stage failed", error_code="wechat_trend_upload_failed"
+            ) from exc
         if not trend.url:
             raise ValueError("trend image URL is missing")
         payload = build_draft_payload(
@@ -103,7 +118,14 @@ def create_wechat_draft_from_article(
             thumb_media_id=cover.media_id,
             trend_image_url=trend.url,
         )
-        draft_id = create_draft(access_token=token, payload=payload)
+        try:
+            draft_id = create_draft(access_token=token, payload=payload)
+        except WechatDeliveryError as exc:
+            if exc.error_code:
+                raise
+            raise WechatDeliveryError(
+                "WeChat draft request stage failed", error_code="wechat_draft_request_failed"
+            ) from exc
         record_wechat_draft_created(
             connection,
             report_date=report_date,

@@ -4,6 +4,7 @@ from datetime import date
 
 from jobflow.channels.wechat_draft import UploadedWechatImage
 from jobflow.reports.wechat_draft_service import create_wechat_draft_from_article
+from jobflow.channels.wechat_official import WechatDeliveryError
 
 
 def _package(tmp_path, report_date):
@@ -104,3 +105,69 @@ def test_invalid_package_is_recorded_without_network(monkeypatch, tmp_path):
     assert result.status == "failed"
     assert result.error_code == "article_package_invalid"
     assert failures[0]["error_code"] == "article_package_invalid"
+
+
+def test_token_failure_records_safe_stage_code(monkeypatch, tmp_path):
+    report_date = date(2026, 8, 29)
+    _package(tmp_path, report_date)
+    failures = []
+    monkeypatch.setattr(
+        "jobflow.reports.wechat_draft_service.get_wechat_draft_status", lambda *a, **k: None
+    )
+    monkeypatch.setattr(
+        "jobflow.reports.wechat_draft_service.claim_wechat_draft", lambda *a, **k: True
+    )
+    monkeypatch.setattr(
+        "jobflow.reports.wechat_draft_service.record_wechat_draft_failed",
+        lambda *a, **k: failures.append(k),
+    )
+    monkeypatch.setattr(
+        "jobflow.reports.wechat_draft_service.get_wechat_access_token",
+        lambda: (_ for _ in ()).throw(AssertionError("token request failed")),
+    )
+    connection = type("Connection", (), {"commit": lambda self: None})()
+
+    result = create_wechat_draft_from_article(
+        connection, report_date=report_date, article_dir=tmp_path, author="OpenJobFlow"
+    )
+
+    assert result.error_code == "wechat_token_failed"
+    assert failures[0]["error_code"] == "wechat_token_failed"
+
+
+def test_generic_draft_failure_records_request_stage_code(monkeypatch, tmp_path):
+    report_date = date(2026, 8, 29)
+    _package(tmp_path, report_date)
+    failures = []
+    monkeypatch.setattr(
+        "jobflow.reports.wechat_draft_service.get_wechat_draft_status", lambda *a, **k: None
+    )
+    monkeypatch.setattr(
+        "jobflow.reports.wechat_draft_service.claim_wechat_draft", lambda *a, **k: True
+    )
+    monkeypatch.setattr(
+        "jobflow.reports.wechat_draft_service.get_wechat_access_token", lambda: "token"
+    )
+    monkeypatch.setattr(
+        "jobflow.reports.wechat_draft_service.upload_image",
+        lambda **kwargs: UploadedWechatImage(
+            "cover" if kwargs["permanent"] else None,
+            None if kwargs["permanent"] else "https://img",
+        ),
+    )
+    monkeypatch.setattr(
+        "jobflow.reports.wechat_draft_service.create_draft",
+        lambda **kwargs: (_ for _ in ()).throw(WechatDeliveryError("request failed")),
+    )
+    monkeypatch.setattr(
+        "jobflow.reports.wechat_draft_service.record_wechat_draft_failed",
+        lambda *a, **k: failures.append(k),
+    )
+    connection = type("Connection", (), {"commit": lambda self: None})()
+
+    result = create_wechat_draft_from_article(
+        connection, report_date=report_date, article_dir=tmp_path, author="OpenJobFlow"
+    )
+
+    assert result.error_code == "wechat_draft_request_failed"
+    assert failures[0]["error_code"] == "wechat_draft_request_failed"
