@@ -1,16 +1,29 @@
 # JobFlow 项目当前状态与开发交接
 
-更新日期：2026-09-28
+更新日期：2026-09-29
 
 这份文档是上下文压缩、新对话、换电脑或暂停开发后的第一入口。继续开发前先读取本文件，再用代码、测试、Git 和服务器实际输出确认可能变化的状态。
 
-## 2026-09-28 双链路状态
+## 2026-09-24 文档契约与公开仓库整理停点
 
-维护者确认 9 月 28 日 ETL、Telegram 图文消息和微信公众号草稿均已完成。登录恢复后完成受控补发，微信草稿单独重试成功，未重复发送已成功的 Telegram 消息；本次属于人工恢复样本。
+本次只做仓库卫生修复，不改动 ETL、API、采集或任何投放链路，也不涉及服务器。
+
+已修复两个让测试套件在干净工作区上失败的问题：
+
+- `docs/superpowers/plans/2026-09-13-telegram-full-recovery.md` 是随 `40fc9c8` 误提交的内部 agentic 执行计划，违反 `test_documentation_is_grouped_by_reader_goal` 中"`docs/superpowers` 不得存在"的契约。已按 `docs/development/plans/2026-08-27-documentation-reorganization.md` 规定的政策移到 `docs/archive/plans/`，并删除空的 `docs/superpowers/` 目录；`.gitignore` 增加 `docs/superpowers/` 防止复发。文件内容无敏感信息，复选框保持原样未改写。
+- `test_all_local_markdown_links_resolve` 的 `rglob` 只排除了 `.git` 和 `.pytest_cache`，会扫描 `frontend/node_modules`、`.kilo` 工作树和 `.pytest_tmp` 生成的临时文章包，任何执行过 `npm install` 或跑过测试的开发机都会失败。已在过滤条件中排除 `node_modules`、`.kilo` 和 `.pytest_tmp`；排除后仍扫描 106 个真实项目 Markdown（其中 `docs/` 下 85 个），未削弱检查效力。
+
+验证结果：`pytest -q` 为 401 passed、1 skipped；`ruff check .` 通过。`tests/integration/` 的 2 failed 与 16 errors 仍是本机缺少 PostgreSQL 环境变量导致的环境缺失，不记为通过。
+
+未 commit、未 push。`.gitignore` 同时增加 `.kilo/`，避免 `git add -A` 把本地工具配置带入公开仓库。下一步建议仍是 migration runner 改增量执行，以及固定 `frontend/package.json` 的浮动 `latest` 版本。
 
 ## 2026-09-24 双链路状态
 
 维护者确认今日 ETL、Telegram 图文消息和微信公众号草稿均正常完成。本次作为一个双链路正常运行观察样本，不代表外部网络、BOSS 登录态和定时任务已经长期无人值守稳定。
+
+## 2026-09-29 双链路状态
+
+维护者确认 9 月 28 日和 9 月 29 日 ETL、Telegram 图文消息和微信公众号草稿均正常完成。9 月 28 日曾在登录恢复后完成缺失日期的受控补发，未重复发送已成功的 Telegram 消息；本次继续作为双链路正常运行观察样本，不代表外部网络、BOSS 登录态和定时任务已经长期无人值守稳定。
 
 ## 2026-09-22 当前状态
 
