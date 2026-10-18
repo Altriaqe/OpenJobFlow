@@ -201,5 +201,5 @@ journalctl -u jobflow-daily-update.service -n 120 --no-pager
 - [微信测试号配置与服务器验收](wechat-test-account.md)
 - [Windows 公众号文章包下载指南](wechat-article-download.md)
 - [Ubuntu 局域网部署与运行手册](ubuntu-deployment.md)
-- [架构与实现状态](../reference/architecture.md)
+- [系统架构](../architecture.md)
 - [项目当前状态与开发交接](../project-handoff.md)

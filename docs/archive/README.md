@@ -9,6 +9,6 @@
 - 历史文档中的计划、路径和命令不代表当前实现；
 - 当前状态先看 [`../project-handoff.md`](../project-handoff.md)；
 - 当前部署教程见 [`../guides/ubuntu-deployment.md`](../guides/ubuntu-deployment.md)；
-- 当前架构见 [`../reference/architecture.md`](../reference/architecture.md)。
+- 当前架构见 [`../architecture.md`](../architecture.md)。
 
 不要根据归档计划直接操作服务器。继续开发前应重新检查代码、测试、Git 和服务器实际输出。

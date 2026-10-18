@@ -1,4 +1,4 @@
-# JobFlow
+# OpenJobFlow
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
@@ -14,7 +14,7 @@
 ![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
 
-![JobFlow 虚构多关键词趋势演示](docs/assets/jobflow-demo.png)
+![OpenJobFlow 虚构多关键词趋势演示](docs/assets/jobflow-demo.png)
 
 _演示结果由完全虚构的数据生成，不代表完整市场需求。_
 
@@ -26,13 +26,13 @@ _演示结果由完全虚构的数据生成，不代表完整市场需求。_
 
 这里的项目版本指公开应用与文档基线，不修改 `pyproject.toml` 中的 Python 包版本。
 
-## 为什么使用 JobFlow
+## 为什么使用 OpenJobFlow
 
 招聘数据项目常把采集、清洗、存储、分析、AI 和消息推送混在一个脚本里。这会让故障难以隔离，也会使公开演示依赖私人账号或在线网站。
 
-JobFlow 将这些职责分开。公开工作流从用户合法获得并提供的 JSON 快照开始，提供一条可复现路径：字段校验、事务化 ETL、PostgreSQL 分层存储以及 FastAPI 只读分析。AI 总结、Telegram 推送、Ubuntu 定时运行和受限网络代理均为可选层。
+OpenJobFlow 将这些职责分开。公开工作流从用户合法获得并提供的 JSON 快照开始，提供一条可复现路径：字段校验、事务化 ETL、PostgreSQL 分层存储以及 FastAPI 只读分析。AI 总结、Telegram 推送、Ubuntu 定时运行和受限网络代理均为可选层。
 
-JobFlow 面向学习、研究、个人技术实践和小型自托管分析。它不是企业级多租户或高可用数据平台：目前不包含权限中心、数据目录、任务编排界面、完整可观测性套件或高可用拓扑。
+OpenJobFlow 面向学习、研究、个人技术实践和小型自托管分析。它不是企业级多租户或高可用数据平台：目前不包含权限中心、数据目录、任务编排界面、完整可观测性套件或高可用拓扑。
 
 ## 核心能力
 
@@ -85,8 +85,8 @@ AI 层不直接连接 PostgreSQL，也不能执行任意 SQL；它只接收固�
 Linux 或 macOS：
 
 ```bash
-git clone https://github.com/Altriaqe/JobFlow.git
-cd JobFlow
+git clone https://github.com/Altriaqe/OpenJobFlow.git
+cd OpenJobFlow
 cp .env.example .env
 mkdir -p data/raw/inbox
 cp examples/jobs.sample.json data/raw/inbox/jobs.json
@@ -95,8 +95,8 @@ cp examples/jobs.sample.json data/raw/inbox/jobs.json
 Windows PowerShell：
 
 ```powershell
-git clone https://github.com/Altriaqe/JobFlow.git
-Set-Location JobFlow
+git clone https://github.com/Altriaqe/OpenJobFlow.git
+Set-Location OpenJobFlow
 Copy-Item .env.example .env
 New-Item -ItemType Directory -Force data/raw/inbox | Out-Null
 Copy-Item examples/jobs.sample.json data/raw/inbox/jobs.json
@@ -192,7 +192,7 @@ curl --fail 'http://127.0.0.1:8000/analytics/skills?limit=20'
 ]
 ```
 
-页面顶部图表由 [JobFlow 当前图表模块](docs/assets/jobflow-demo.png)根据确定性的虚构聚合数据生成。它只用于展示能力，不代表真实市场需求。
+页面顶部图表由 [OpenJobFlow 当前图表模块](docs/assets/jobflow-demo.png)根据确定性的虚构聚合数据生成。它只用于展示能力，不代表真实市场需求。
 
 ## 技术栈
 
@@ -216,7 +216,7 @@ Python 依赖和支持版本声明在 [pyproject.toml](pyproject.toml)，容器�
 ## 项目结构
 
 ```text
-JobFlow/
+OpenJobFlow/
 ├── src/jobflow/
 │   ├── adapters/       # 数据源校验、映射、薪资与技能标准化
 │   ├── workers/        # ETL 编排和事务边界
@@ -240,7 +240,7 @@ JobFlow/
 └── pyproject.toml      # 包、依赖、Pytest 和 Ruff 设置
 ```
 
-高级每日工作流使用的生产式浏览器采集器是独立项目，不随 JobFlow 发布。
+高级每日工作流使用的生产式浏览器采集器是独立项目，不随 OpenJobFlow 发布。
 
 ## 可选 AI 总结
 
@@ -282,7 +282,7 @@ POST /reports/cities/send?mode=ai
 Authorization: Bearer <YOUR_REPORT_TRIGGER_TOKEN>
 ```
 
-如果 Telegram 已收到请求后才发生网络故障，外部消息推送的结果可能不确定。JobFlow 不会自动重复一次结果不确定的普通发送。高级多关键词流程会记录推送状态，并提供显式的仅补图恢复路径；该操作要求人工确认文字已可见。恢复流程参见 [Ubuntu 部署与运维指南](docs/guides/ubuntu-deployment.md)。
+如果 Telegram 已收到请求后才发生网络故障，外部消息推送的结果可能不确定。OpenJobFlow 不会自动重复一次结果不确定的普通发送。高级多关键词流程会记录推送状态，并提供显式的仅补图恢复路径；该操作要求人工确认文字已可见。恢复流程参见 [Ubuntu 部署与运维指南](docs/guides/ubuntu-deployment.md)。
 
 数据库 ETL 与外部消息推送具有不同的失败边界：Telegram 发送失败不会回滚已经完成的 ETL 事务。
 
@@ -301,12 +301,12 @@ V1.3.6 增加了微信草稿失败的明确状态。V1.3.7 进一步增加安全
 对于长期运行的自托管部署，高层流程如下：
 
 1. 在 Ubuntu 安装 Git、Docker Engine 和 Docker Compose v2。
-2. 克隆 JobFlow，把 `.env.example` 复制为私有 `.env`，并只填写你自己的配置。
+2. 克隆 OpenJobFlow，把 `.env.example` 复制为私有 `.env`，并只填写你自己的配置。
 3. 按 Quick Start 使用相同命令运行 PostgreSQL、Migration、ETL 和 API。
 4. 审查 `ops/daily_update.sh`，再创建并安装与你自己的用户、路径、环境和调度时间匹配的 systemd service/timer unit。
 5. 在依赖定时任务前，验证健康状态、日志、快照状态和真实推送结果。
 
-高级每日工作流还需要一个独立、合法授权的采集器、专用 Chrome 环境，以及平台要求的人工登录或安全验证。JobFlow 不会绕过验证码、风控、身份验证、登录限制或访问控制。
+高级每日工作流还需要一个独立、合法授权的采集器、专用 Chrome 环境，以及平台要求的人工登录或安全验证。OpenJobFlow 不会绕过验证码、风控、身份验证、登录限制或访问控制。
 
 仓库提供 `ops/daily_update.sh`，**不提供可直接安装的 systemd unit 文件**。运行检查、VNC 辅助登录、失败处理和恢复背景参见 [Ubuntu 部署与运维指南](docs/guides/ubuntu-deployment.md)。启用前请审查你自行创建的每个 unit。将 `<SERVER_IP>`、`<SSH_USER>` 和 `<JOBFLOW_DIR>` 等所有占位符替换为你自己的私有值，并且不要提交这些值。
 
@@ -365,16 +365,16 @@ docker compose config --quiet
 
 ## 数据、安全与合规
 
-- 公开工作流从用户提供的合规 JSON 开始。JobFlow 不授予采集或再分发第三方数据的权限。
+- 公开工作流从用户提供的合规 JSON 开始。OpenJobFlow 不授予采集或再分发第三方数据的权限。
 - `examples/jobs.sample.json` 完全虚构，其中的公司、记录和 `example.com` 链接均非复制自招聘平台。
-- JobFlow 仅用于学习、研究和合法技术实践。你需要自行负责数据授权、平台条款、隐私要求和当地法律。
-- JobFlow 不提供或认可绕过验证码、风控、身份验证、登录限制、速率限制或访问控制的方法。
+- OpenJobFlow 仅用于学习、研究和合法技术实践。你需要自行负责数据授权、平台条款、隐私要求和当地法律。
+- OpenJobFlow 不提供或认可绕过验证码、风控、身份验证、登录限制、速率限制或访问控制的方法。
 - 不要提交 `.env`、API Key、Bot Token、Chat ID、Cookie、浏览器 Profile、私钥、代理订阅、节点凭据、含密钥日志或真实招聘快照。
 - 只暴露受约束的聚合 API。不要向不可信网络暴露原始记录、数据库端口或任意 SQL 接口。
 - 数据库访问、报告授权、Telegram 和 AI 服务应使用相互独立的密钥。
 - 维护者不认可也不为使用者的数据来源、部署方式或第三方服务行为承担责任。
 
-MIT License 只覆盖 JobFlow 自有源代码和文档，不授权第三方数据、网站、内容、商标、凭据或服务。
+MIT License 只覆盖 OpenJobFlow 自有源代码和文档，不授权第三方数据、网站、内容、商标、凭据或服务。
 
 ## 路线图
 
@@ -400,11 +400,11 @@ MIT License 只覆盖 JobFlow 自有源代码和文档，不授权第三方数�
 4. 修改部署文件时运行 `docker compose config --quiet`。
 5. 提议新数据源 Adapter 时说明数据授权边界。
 
-请保持 JobFlow 的清晰定位：它是轻量级流水线，不是通用企业数据平台。
+请保持 OpenJobFlow 的清晰定位：它是轻量级流水线，不是通用企业数据平台。
 
 ## 许可证
 
-JobFlow 自有代码和文档依据 [MIT License](LICENSE) 发布，版权归 2026 Altriaqe 所有。
+OpenJobFlow 自有代码和文档依据 [MIT License](LICENSE) 发布，版权归 2026 Altriaqe 所有。
 
 该许可证不覆盖第三方招聘数据、网站、内容、商标或凭据。使用任何外部数据源前，请阅读[数据、安全与合规](#数据安全与合规)。
 
@@ -414,7 +414,7 @@ JobFlow 自有代码和文档依据 [MIT License](LICENSE) 发布，版权归 20
 - [微信测试号配置指南](docs/guides/wechat-test-account.md)
 - [微信公众号自动草稿与排错指南](docs/guides/wechat-official-draft.md)
 - [Windows 公众号文章包下载指南](docs/guides/wechat-article-download.md)
-- [架构与实现状态](docs/reference/architecture.md)
+- [系统架构](docs/architecture.md)
 - [Ubuntu 部署与运维](docs/guides/ubuntu-deployment.md)
 - [数据源与合规边界](docs/reference/data-sources.md)
 - [学习与故障排查笔记](docs/development/learning-notes.md)

@@ -1,49 +1,40 @@
-# JobFlow 文档
+# OpenJobFlow 项目文档
 
-这里记录 JobFlow 的当前实现、运行方式、部署边界和演进设计。代码、migration、测试结果和真实运行证据是完成状态的最终依据；历史设计中的“计划”不自动代表已经实现。
+这里记录 OpenJobFlow 的当前实现、架构、部署边界、运维状态和历史设计。代码、migration、测试结果和真实运行证据是完成状态的最终依据；历史计划不自动代表已经实现。
 
-## 公开仓库入口
+## 入口文档
 
-- [`../README.md`](../README.md)：英文项目首页与完整 Docker Quick Start。
-- [`../README.zh-CN.md`](../README.zh-CN.md)：中文项目首页与完整 Docker 复现步骤。
-- [`assets/jobflow-demo.png`](assets/jobflow-demo.png)：使用完全虚构数据生成的趋势图示例。
+- [`architecture.md`](architecture.md)：正式系统架构、模块边界、数据流、部署和安全边界。
+- [`project-handoff.md`](project-handoff.md)：当前 Git 状态、已验证功能、未完成事项和新对话交接入口。
+- [`../README.md`](../README.md)：英文项目首页、Quick Start 和公开能力说明。
+- [`../README.zh-CN.md`](../README.zh-CN.md)：中文项目首页和复现步骤。
+- [`assets/jobflow-demo.png`](assets/jobflow-demo.png)：使用合成数据生成的趋势图示例。
 
-## 第一次运行项目
+## 按任务阅读
 
-- [`guides/ubuntu-deployment.md`](guides/ubuntu-deployment.md)：Ubuntu 从拉取代码到启动、ETL、验证和停机的运行手册。
-- [`guides/wechat-test-account.md`](guides/wechat-test-account.md)：微信测试号配置、Migration、手动验收和安全恢复。
-- [`guides/wechat-official-draft.md`](guides/wechat-official-draft.md)：正式公众号自动草稿、素材上传、UTF-8、内联排版、幂等状态与分层排错。
-- [`guides/wechat-article-download.md`](guides/wechat-article-download.md)：Windows 一键拉取、校验和整理公众号文章包，发布仍由人工确认。
+### 部署与运行
 
-根目录 README 面向公开用户，提供从合规 JSON 快照开始的最短可运行路径；`guides/` 提供更完整的部署和外部渠道验收步骤。
+- [`guides/ubuntu-deployment.md`](guides/ubuntu-deployment.md)：Ubuntu、自托管 Docker、每日任务和恢复边界。
+- [`guides/wechat-official-draft.md`](guides/wechat-official-draft.md)：微信公众号文章包、草稿创建和排障。
+- [`guides/wechat-test-account.md`](guides/wechat-test-account.md)：微信测试号配置与验收。
+- [`guides/wechat-article-download.md`](guides/wechat-article-download.md)：Windows 下载和校验文章包。
 
-## 理解项目结构和数据边界
+### 开发与设计
 
-- [`reference/architecture.md`](reference/architecture.md)：当前模块边界、数据流和已实现范围。
-- [`reference/data-sources.md`](reference/data-sources.md)：快照来源、使用边界和后续替换方式。
-- [`reference/platform-evolution-design.md`](reference/platform-evolution-design.md)：AI 数据中台、只读机器人和数据源演进方向。
+- [`development/README.md`](development/README.md)：当前开发资料索引。
+- [`development/learning-notes.md`](development/learning-notes.md)：通用诊断顺序和实现经验。
+- [`reference/data-sources.md`](reference/data-sources.md)：数据源和合规边界。
 
-## 恢复和继续开发
+### 历史材料
 
-- [`project-handoff.md`](project-handoff.md)：当前目标、Git 状态、验证结果和下一步，是新对话与恢复开发的固定入口。
-- [`development/README.md`](development/README.md)：当前版本仍在开发或等待验收的设计与计划。
-- [`development/specs/2026-09-05-platform-operations-dashboard-design.md`](development/specs/2026-09-05-platform-operations-dashboard-design.md)：平台运行与投放控制台设计。
-- [`development/plans/2026-09-05-platform-operations-dashboard.md`](development/plans/2026-09-05-platform-operations-dashboard.md)：控制台实施计划。
-- [`development/learning-notes.md`](development/learning-notes.md)：开发过程中遇到的问题、诊断顺序和修复原因。
+- [`operations/`](operations/)：已发生的运行验收和故障恢复记录。
+- [`archive/README.md`](archive/README.md)：已完成、替代或不再作为当前计划的设计材料。
 
-## 运行证据与历史
+## 文档维护规则
 
-- [`operations/2026-08-25-daily-update-production-acceptance.md`](operations/2026-08-25-daily-update-production-acceptance.md)：API 就绪等待修复后的正式日报验收记录。
-- [`operations/2026-09-04-dual-channel-stability.md`](operations/2026-09-04-dual-channel-stability.md)：V1.3.5 微信公众号与 Telegram 双渠道稳定发送观察记录。
-- [`operations/2026-09-05-poweroutage-recovery.md`](operations/2026-09-05-poweroutage-recovery.md)：服务器断电重启后的双线路手动恢复记录。
-- [`archive/README.md`](archive/README.md)：已完成或被替代的历史设计与实施计划。
-
-## 维护规则
-
-- 功能完成后同步更新 `project-handoff.md` 的进度、验证结果和下一步；
-- 启动命令或服务器配置变化时更新 `guides/ubuntu-deployment.md`；
-- 架构边界变化时更新 `reference/architecture.md`；
-- 当前开发资料进入 `development/`，完成或被替代后移入 `archive/`；
-- 不在文档中记录 `.env` 实际值、密码、API Key、Webhook、Token、Cookie 或私钥；
-- 公开文档只使用服务器、用户名和目录占位符，不记录真实个人环境；
-- 不把“代码已写”表述为“外部服务已真实联调”或“生产环境已上线”。
+- 新对话先读 `project-handoff.md`，再读 `architecture.md` 和对应运行指南；
+- 功能完成后只记录已验证的实现和证据，不把计划写成完成；
+- 架构边界变化时更新 `architecture.md`；部署命令变化时更新对应指南；
+- 每日运行记录只保留项目本身的简短状态，具体私有环境信息不进入公开仓库；
+- 不记录 `.env` 实际值、密码、API Key、Webhook、Token、Cookie、私钥、真实服务器地址或真实数据；
+- 公开项目只使用占位符和合成示例，真实运行产物留在部署环境。
