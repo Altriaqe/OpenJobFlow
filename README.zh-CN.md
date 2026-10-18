@@ -410,6 +410,7 @@ OpenJobFlow 自有代码和文档依据 [MIT License](LICENSE) 发布，版权�
 
 ## 详细文档
 
+- [架构总览](ARCHITECTURE.md)：组件、数据流、接口契约与失败模型
 - [文档索引](docs/README.md)
 - [微信测试号配置指南](docs/guides/wechat-test-account.md)
 - [微信公众号自动草稿与排错指南](docs/guides/wechat-official-draft.md)

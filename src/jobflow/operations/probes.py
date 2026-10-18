@@ -13,11 +13,13 @@ def build_dashboard_probes(connection):
         {
             "postgres": database_probe("postgres", connection, "SELECT TRUE"),
             "latest_etl": database_probe(
-                "latest_etl", connection,
+                "latest_etl",
+                connection,
                 "SELECT EXISTS (SELECT 1 FROM ops.batches WHERE status = 'succeeded')",
             ),
             "telegram": database_probe(
-                "telegram", connection,
+                "telegram",
+                connection,
                 """SELECT EXISTS (
                     SELECT 1 FROM ops.report_deliveries
                     WHERE status IN ('completed', 'completed_text_uncertain')
@@ -27,7 +29,8 @@ def build_dashboard_probes(connection):
                 )""",
             ),
             "wechat": database_probe(
-                "wechat", connection,
+                "wechat",
+                connection,
                 """SELECT EXISTS (
                     SELECT 1 FROM ops.wechat_draft_jobs WHERE status = 'created'
                 )""",

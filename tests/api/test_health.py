@@ -21,18 +21,14 @@ def test_health_does_not_open_database():
 
 
 def test_local_frontend_is_allowed_to_read_health():
-    response = TestClient(create_app()).get(
-        "/health", headers={"Origin": "http://localhost:5173"}
-    )
+    response = TestClient(create_app()).get("/health", headers={"Origin": "http://localhost:5173"})
 
     assert response.status_code == 200
     assert response.headers["access-control-allow-origin"] == "http://localhost:5173"
 
 
 def test_unknown_frontend_is_not_allowed_to_read_health():
-    response = TestClient(create_app()).get(
-        "/health", headers={"Origin": "http://evil.example"}
-    )
+    response = TestClient(create_app()).get("/health", headers={"Origin": "http://evil.example"})
 
     assert response.status_code == 200
     assert "access-control-allow-origin" not in response.headers

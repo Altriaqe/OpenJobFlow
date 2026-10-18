@@ -2,7 +2,13 @@
 
 from collections.abc import Mapping, Sequence
 
-from jobflow.operations.models import CheckResult, StageDefinition, StageEvidence, StageSnapshot, StageState
+from jobflow.operations.models import (
+    CheckResult,
+    StageDefinition,
+    StageEvidence,
+    StageSnapshot,
+    StageState,
+)
 
 
 def derive_stage_state(definition: StageDefinition, evidence: StageEvidence) -> StageState:

@@ -36,3 +36,8 @@ addopts = "-ra"
 [tool.ruff]
 target-version = "py312"
 line-length = 100
+# Pin the rule set so newer Ruff releases cannot silently expand the gate.
+# This is the rule set the project has been checked against; widening it is a separate change.
+lint.select = ["E4", "E7", "E9", "F"]
+# Documentation is prose with hand-written historical snippets; format only Python sources.
+exclude = ["docs"]

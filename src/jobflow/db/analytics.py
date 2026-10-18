@@ -1,5 +1,6 @@
 """只读分析查询：从 mart 视图读取已聚合的岗位指标。"""
 
+
 def list_city_job_counts(connection, limit: int) -> list[dict[str, object]]:
     """按岗位数量降序读取城市指标，平局按城市名稳定排序。"""
     cursor = connection.cursor()

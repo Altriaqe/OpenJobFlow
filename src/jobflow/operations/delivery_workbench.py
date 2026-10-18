@@ -107,9 +107,7 @@ def _safe_channel(channel: str, status: str, attempts: int, updated_at, error_co
     }
 
 
-def build_delivery_workbench(
-    connection, *, report_date: date, today: date
-) -> dict[str, object]:
+def build_delivery_workbench(connection, *, report_date: date, today: date) -> dict[str, object]:
     """返回指定日期的安全投放快照，不调用外部服务。"""
     if report_date > today:
         return {

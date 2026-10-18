@@ -2,7 +2,7 @@
 
 更新日期：2026-08-30
 
-本文记录 JobFlow V1.1 至 V1.3 在 Ubuntu 服务器上的通用部署和运行方式。所有命令使用 Compose v2+ 形式 `docker compose`，不要使用旧版 `docker-compose`。
+本文记录 OpenJobFlow V1.1 至 V1.3 在 Ubuntu 服务器上的通用部署和运行方式。所有命令使用 Compose v2+ 形式 `docker compose`，不要使用旧版 `docker-compose`。
 
 `<SSH_USER>`、`<SERVER_IP>`、`<JOBFLOW_DIR>`、`<API_HOST>` 和 `<API_PORT>` 都是占位符。执行命令前替换为自己的值，不要保留尖括号。
 
@@ -196,7 +196,7 @@ OpenSSH：允许
 
 ## 网络代理（可选）
 
-JobFlow 默认可以在不配置代理的情况下部署。如果服务器网络能够直接访问所需外部服务，将 `JOBFLOW_HTTP_PROXY` 和 `JOBFLOW_HTTPS_PROXY` 留空。
+OpenJobFlow 默认可以在不配置代理的情况下部署。如果服务器网络能够直接访问所需外部服务，将 `JOBFLOW_HTTP_PROXY` 和 `JOBFLOW_HTTPS_PROXY` 留空。
 
 如果所在网络需要代理，应用容器可以使用部署者自己维护的代理服务：
 

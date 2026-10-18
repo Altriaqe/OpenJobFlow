@@ -4,6 +4,7 @@
 
 ## 入口文档
 
+- [`../ARCHITECTURE.md`](../ARCHITECTURE.md)：英文架构总览、组件契约、失败模型和验证入口。
 - [`architecture.md`](architecture.md)：正式系统架构、模块边界、数据流、部署和安全边界。
 - [`project-handoff.md`](project-handoff.md)：当前 Git 状态、已验证功能、未完成事项和新对话交接入口。
 - [`../README.md`](../README.md)：英文项目首页、Quick Start 和公开能力说明。

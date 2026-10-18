@@ -92,7 +92,7 @@ def render_channel_status(channel: dict[str, object]) -> None:
     st.markdown(
         f'<div class="jf-row"><strong>{labels.get(channel["channel"], channel["channel"])}</strong>'
         f'<span style="float:right" class="jf-status {css}">'
-        f'{status_labels.get(status, status)}</span></div>',
+        f"{status_labels.get(status, status)}</span></div>",
         unsafe_allow_html=True,
     )
     if channel.get("error_code"):

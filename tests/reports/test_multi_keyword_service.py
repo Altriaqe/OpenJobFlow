@@ -701,7 +701,11 @@ def test_recovery_photo_timeout_stops_without_retry(monkeypatch) -> None:
 
 
 def test_full_recovery_sends_text_then_photo(monkeypatch) -> None:
-    connection = arrange(monkeypatch, delivery_status="text_uncertain", locked_statuses=("text_uncertain", "text_sent"))
+    connection = arrange(
+        monkeypatch,
+        delivery_status="text_uncertain",
+        locked_statuses=("text_uncertain", "text_sent"),
+    )
     text_sender = Mock(return_value=TelegramReceipt(201, 1))
     photo_sender = Mock(return_value=TelegramReceipt(202, 1))
 

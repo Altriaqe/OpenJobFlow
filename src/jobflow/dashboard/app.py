@@ -47,7 +47,12 @@ def render_overview(snapshot) -> None:
     st.title("平台总览")
     accepted = sum(item.state.value in {"已验收", "已完成"} for item in snapshot)
     render_metric_grid(
-        (("阶段状态", f"{accepted}/{len(snapshot)}", "当前证据"), ("今日岗位快照", "-", "等待数据"), ("ETL 批次", "-", "数据库记录"), ("渠道投放", "2/2", "人工确认"))
+        (
+            ("阶段状态", f"{accepted}/{len(snapshot)}", "当前证据"),
+            ("今日岗位快照", "-", "等待数据"),
+            ("ETL 批次", "-", "数据库记录"),
+            ("渠道投放", "2/2", "人工确认"),
+        )
     )
     left, right = st.columns([1.25, 0.75])
     with left:
@@ -120,17 +125,13 @@ def render_deliveries(connection) -> None:
                 "手动投放", key=f"send-{selected}-{channel_name}"
             ):
                 st.info(
-                    _call_report_action(
-                        connection, endpoint, selected, action="manual_delivery"
-                    )
+                    _call_report_action(connection, endpoint, selected, action="manual_delivery")
                 )
             elif "retry" in channel["actions"] and st.button(
                 "再次投放", key=f"retry-{selected}-{channel_name}"
             ):
                 st.info(
-                    _call_report_action(
-                        connection, endpoint, selected, action="retry_delivery"
-                    )
+                    _call_report_action(connection, endpoint, selected, action="retry_delivery")
                 )
 
 

@@ -36,7 +36,9 @@ def _parse_cities(value: str) -> tuple[str, ...]:
     return cities
 
 
-def audit_batches(connection, *, start_date: date, end_date: date) -> tuple[tuple[object, ...], ...]:
+def audit_batches(
+    connection, *, start_date: date, end_date: date
+) -> tuple[tuple[object, ...], ...]:
     """列出日期范围内可供人工核验的批次，不自动修改数据。"""
     """只读列出可能用于人工核验的历史批次，不读取完整岗位内容。"""
 
@@ -169,9 +171,7 @@ def build_parser() -> argparse.ArgumentParser:
 def _print_audit(rows: tuple[tuple[object, ...], ...]) -> None:
     print("batch_id\tdate\tstatus\trow_count\traw_count\tlocation_count")
     for batch_id, status, batch_date, row_count, raw_count, location_count in rows:
-        print(
-            f"{batch_id}\t{batch_date}\t{status}\t{row_count}\t{raw_count}\t{location_count}"
-        )
+        print(f"{batch_id}\t{batch_date}\t{status}\t{row_count}\t{raw_count}\t{location_count}")
 
 
 def main(argv: list[str] | None = None) -> int:

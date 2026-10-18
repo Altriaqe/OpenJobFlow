@@ -19,9 +19,7 @@ router = APIRouter(prefix="/dashboard")
 def get_delivery_workbench(snapshot_date: date, connection=Depends(get_connection)):
     """返回指定日期的安全投放工作台快照。"""
     try:
-        return build_delivery_workbench(
-            connection, report_date=snapshot_date, today=date.today()
-        )
+        return build_delivery_workbench(connection, report_date=snapshot_date, today=date.today())
     except Exception as exc:
         raise HTTPException(status_code=503, detail="delivery workbench unavailable") from exc
 
@@ -137,8 +135,11 @@ def get_dashboard_summary(connection=Depends(get_connection)):
             ],
             "runs": [
                 {
-                    "id": row[0], "kind": row[1], "status": row[3],
-                    "started_at": row[5], "finished_at": row[6],
+                    "id": row[0],
+                    "kind": row[1],
+                    "status": row[3],
+                    "started_at": row[5],
+                    "finished_at": row[6],
                 }
                 for row in runs
             ],

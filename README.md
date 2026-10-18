@@ -410,6 +410,7 @@ This license does not cover third-party recruitment data, websites, content, tra
 
 ## Documentation
 
+- [Architecture overview](ARCHITECTURE.md): components, data flow, contracts, and failure model
 - [Documentation index](docs/README.md)
 - [WeChat test-account setup](docs/guides/wechat-test-account.md)
 - [WeChat Official Account draft and troubleshooting](docs/guides/wechat-official-draft.md)

@@ -461,8 +461,7 @@ def test_multi_photo_recovery_rejects_missing_token_before_db_access(monkeypatch
     )
     try:
         response = client.post(
-            "/reports/daily/multi/recover-photo"
-            "?snapshot_date=2026-08-22&confirm_text_visible=true"
+            "/reports/daily/multi/recover-photo?snapshot_date=2026-08-22&confirm_text_visible=true"
         )
     finally:
         app.dependency_overrides.clear()
@@ -498,8 +497,7 @@ def test_multi_photo_recovery_forwards_explicit_confirmation(monkeypatch) -> Non
     )
     try:
         response = client.post(
-            "/reports/daily/multi/recover-photo"
-            "?snapshot_date=2026-08-22&confirm_text_visible=true",
+            "/reports/daily/multi/recover-photo?snapshot_date=2026-08-22&confirm_text_visible=true",
             headers={"Authorization": "Bearer test-trigger-token"},
         )
     finally:
@@ -521,8 +519,7 @@ def test_multi_photo_recovery_maps_uncertain_delivery_to_502(monkeypatch) -> Non
     client, app = multi_recovery_client(monkeypatch, recoverer)
     try:
         response = client.post(
-            "/reports/daily/multi/recover-photo"
-            "?snapshot_date=2026-08-22&confirm_text_visible=true",
+            "/reports/daily/multi/recover-photo?snapshot_date=2026-08-22&confirm_text_visible=true",
             headers={"Authorization": "Bearer test-trigger-token"},
         )
     finally:

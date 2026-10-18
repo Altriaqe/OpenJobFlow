@@ -117,7 +117,9 @@ def require_report_token(
     """校验报告接口 Bearer Token；失败只返回通用鉴权错误。"""
     expected = os.getenv("REPORT_TRIGGER_TOKEN")
     provided = credentials.credentials if credentials else ""
-    if (not expected or not secrets.compare_digest(provided, expected)) and not _valid_session(session):
+    if (not expected or not secrets.compare_digest(provided, expected)) and not _valid_session(
+        session
+    ):
         raise HTTPException(status_code=401, detail="invalid report trigger token")
 
 
@@ -423,7 +425,9 @@ def create_wechat_daily_draft(
             "error_code": result.error_code,
         }
     except ValueError as exc:
-        raise HTTPException(status_code=409, detail="wechat draft request is not actionable") from exc
+        raise HTTPException(
+            status_code=409, detail="wechat draft request is not actionable"
+        ) from exc
     except Exception as exc:
         raise HTTPException(status_code=503, detail="wechat draft service unavailable") from exc
 

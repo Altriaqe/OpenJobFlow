@@ -1,0 +1,12 @@
+# Store text files as LF in Git so formatting checks are identical on every platform.
+# Git handles native line endings on checkout; working copies do not change the index.
+* text=auto
+*.py text eol=lf
+*.md text eol=lf
+*.toml text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.sql text eol=lf
+*.sh text eol=lf
+*.json text eol=lf
+*.example text eol=lf

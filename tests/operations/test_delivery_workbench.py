@@ -35,9 +35,7 @@ def _connection(*, snapshot=True, telegram=None, wechat=None):
 
 
 def test_future_date_is_not_actionable():
-    result = build_delivery_workbench(
-        _connection(), report_date=date(2026, 9, 10), today=TODAY
-    )
+    result = build_delivery_workbench(_connection(), report_date=date(2026, 9, 10), today=TODAY)
     assert result["date_state"] == "future"
     assert result["snapshot_available"] is False
     assert result["channels"] == []
@@ -46,9 +44,7 @@ def test_future_date_is_not_actionable():
 def test_past_date_reuses_existing_snapshot(monkeypatch, tmp_path: Path):
     output = tmp_path / "runtime" / "reports" / REPORT_DATE.isoformat() / "wechat"
     output.mkdir(parents=True)
-    (output / "manifest.json").write_text(
-        '{"report_date": "2026-09-08"}', encoding="utf-8"
-    )
+    (output / "manifest.json").write_text('{"report_date": "2026-09-08"}', encoding="utf-8")
     for name in ("article.html", "cover.png", "trend.png"):
         (output / name).write_bytes(b"x")
     monkeypatch.chdir(tmp_path)
@@ -59,7 +55,15 @@ def test_past_date_reuses_existing_snapshot(monkeypatch, tmp_path: Path):
     assert result["channels"][0]["actions"] == ["send"]
 
 
-@pytest.mark.parametrize("status, confirm, allowed", [("sent", False, False), ("failed", False, True), ("uncertain", False, False), ("uncertain", True, True)])
+@pytest.mark.parametrize(
+    "status, confirm, allowed",
+    [
+        ("sent", False, False),
+        ("failed", False, True),
+        ("uncertain", False, False),
+        ("uncertain", True, True),
+    ],
+)
 def test_delivery_policy(status, confirm, allowed):
     connection = _connection(telegram=[("telegram", status, 1, None, "network")])
     if allowed:

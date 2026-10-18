@@ -60,27 +60,36 @@ def test_docker_context_excludes_project_virtualenvs() -> None:
     assert ".venv*" in (ROOT / ".dockerignore").read_text(encoding="utf-8").splitlines()
 
 
-def _public_text_files_for_scan() -> list[Path]:
+def _public_candidate_files() -> list[Path]:
+    """Return tracked and untracked-but-not-ignored files, so private local directories stay out."""
     result = subprocess.run(
-        ["git", "ls-files", "-z"],
+        ["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard"],
         cwd=ROOT,
         check=True,
         capture_output=True,
         text=True,
         encoding="utf-8",
     )
-    tracked_paths = set()
+    candidates: list[Path] = []
     for item in result.stdout.split("\0"):
         if not item:
             continue
         path = ROOT / item
-        is_public_text = (
-            path.name in PUBLIC_TEXT_FILENAMES or path.suffix.lower() in PUBLIC_TEXT_SUFFIXES
-        )
-        if path.is_file() and is_public_text:
-            tracked_paths.add(path)
-    documentation_paths = set(DOCS_ROOT.rglob("*.md"))
-    return sorted(tracked_paths | documentation_paths)
+        if path.is_file():
+            candidates.append(path)
+    return sorted(candidates)
+
+
+def _markdown_files_for_validation() -> list[Path]:
+    return [path for path in _public_candidate_files() if path.suffix.lower() == ".md"]
+
+
+def _public_text_files_for_scan() -> list[Path]:
+    return [
+        path
+        for path in _public_candidate_files()
+        if path.name in PUBLIC_TEXT_FILENAMES or path.suffix.lower() in PUBLIC_TEXT_SUFFIXES
+    ]
 
 
 def _markdown_without_fenced_code(text: str) -> str:
@@ -145,9 +154,9 @@ def test_english_readme_has_public_onboarding_contract() -> None:
     text = ENGLISH_README.read_text(encoding="utf-8")
 
     required = (
-        "# JobFlow",
+        "# OpenJobFlow",
         "[简体中文](README.zh-CN.md)",
-        "## Why JobFlow",
+        "## Why OpenJobFlow",
         "## Key Features",
         "## Architecture",
         "## Quick Start",
@@ -177,9 +186,9 @@ def test_chinese_readme_has_matching_public_onboarding_contract() -> None:
     text = CHINESE_README.read_text(encoding="utf-8")
 
     required = (
-        "# JobFlow",
+        "# OpenJobFlow",
         "[English](README.md)",
-        "## 为什么使用 JobFlow",
+        "## 为什么使用 OpenJobFlow",
         "## 核心能力",
         "## 架构与数据流",
         "## 10 分钟 Docker 复现",
@@ -241,11 +250,7 @@ def test_bilingual_readme_local_links_resolve() -> None:
 
 
 def test_all_local_markdown_links_resolve() -> None:
-    markdown_files = sorted(
-        path
-        for path in ROOT.rglob("*.md")
-        if ".git" not in path.parts and ".pytest_cache" not in path.parts
-    )
+    markdown_files = _markdown_files_for_validation()
     broken: list[str] = []
 
     for markdown_path in markdown_files:
@@ -276,6 +281,7 @@ def test_docs_index_points_to_bilingual_public_entrypoints() -> None:
 def test_documentation_is_grouped_by_reader_goal() -> None:
     required_files = {
         DOCS_INDEX,
+        DOCS_ROOT / "architecture.md",
         DOCS_ROOT / "project-handoff.md",
         GUIDES_ROOT / "ubuntu-deployment.md",
         GUIDES_ROOT / "wechat-test-account.md",
@@ -284,18 +290,11 @@ def test_documentation_is_grouped_by_reader_goal() -> None:
         REFERENCE_ROOT / "platform-evolution-design.md",
         DEVELOPMENT_ROOT / "README.md",
         DEVELOPMENT_ROOT / "learning-notes.md",
-        DEVELOPMENT_ROOT / "specs" / "2026-08-26-wechat-official-daily-delivery-design.md",
-        DEVELOPMENT_ROOT / "specs" / "2026-08-27-wechat-article-package-permissions-design.md",
-        DEVELOPMENT_ROOT / "specs" / "2026-08-27-documentation-reorganization-design.md",
-        DEVELOPMENT_ROOT / "plans" / "2026-08-26-wechat-official-daily-delivery.md",
-        DEVELOPMENT_ROOT / "plans" / "2026-08-27-wechat-article-package-permissions.md",
-        DEVELOPMENT_ROOT / "plans" / "2026-08-27-documentation-reorganization.md",
         ARCHIVE_ROOT / "README.md",
     }
     legacy_files = {
         DOCS_ROOT / "ubuntu-deployment.md",
         DOCS_ROOT / "wechat-test-account.md",
-        DOCS_ROOT / "architecture.md",
         DOCS_ROOT / "data-sources.md",
         DOCS_ROOT / "platform-evolution-design.md",
         DOCS_ROOT / "learning-notes.md",
@@ -303,6 +302,8 @@ def test_documentation_is_grouped_by_reader_goal() -> None:
 
     assert all(path.is_file() for path in required_files)
     assert not any(path.exists() for path in legacy_files)
+    assert (REFERENCE_ROOT / "architecture.md").is_file()
+    assert "../architecture.md" in (REFERENCE_ROOT / "architecture.md").read_text(encoding="utf-8")
     assert not (DOCS_ROOT / "superpowers").exists()
 
 

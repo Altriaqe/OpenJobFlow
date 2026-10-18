@@ -63,8 +63,6 @@ def test_record_failed_is_deprecated_and_read_status_is_safe():
     )
     assert "status = 'failed'" in cursor.execute.call_args.args[0]
 
-    status = WechatDraftStatus(
-        date(2026, 8, 29), "created", "draft", "cover", "trend", None, None
-    )
+    status = WechatDraftStatus(date(2026, 8, 29), "created", "draft", "cover", "trend", None, None)
     cursor.fetchone.return_value = tuple(status.__dict__.values())
     assert get_wechat_draft_status(connection, report_date=status.report_date) == status

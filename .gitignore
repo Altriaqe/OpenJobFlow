@@ -6,6 +6,8 @@ __pycache__/
 .ruff_cache/
 .mypy_cache/
 .superpowers/
+# 内部 agentic 计划不得进入公开文档；已完成计划按 docs/archive/ 归档
+docs/superpowers/
 
 # Virtual environments and local configuration
 .venv/
@@ -23,6 +25,7 @@ dist/
 # IDE and OS
 .vscode/
 .idea/
+.kilo/
 .DS_Store
 Thumbs.db
 
